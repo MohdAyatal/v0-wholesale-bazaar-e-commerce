@@ -51,23 +51,28 @@ export default function FlashSaleSection({ title = 'Flash Sale', discount = 30, 
 
             {/* Countdown Timer */}
             <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <div className="text-center">
-                  <div className="bg-white bg-opacity-20 rounded-lg px-3 py-2 min-w-[60px]">
-                    <div className="text-2xl font-bold">{String(timeLeft.hours).padStart(2, '0')}</div>
-                    <div className="text-xs uppercase opacity-75">Hours</div>
+              <div className="flex items-center gap-2">
+                <Clock size={24} className="text-white" />
+                <div className="flex gap-1 items-center">
+                  <div className="text-center">
+                    <div className="bg-black bg-opacity-40 rounded-lg px-4 py-2 min-w-[70px] border-2 border-yellow-300">
+                      <div className="text-3xl font-bold text-yellow-300">{String(timeLeft.hours).padStart(2, '0')}</div>
+                      <div className="text-xs font-bold uppercase text-yellow-200 tracking-wider">Hrs</div>
+                    </div>
                   </div>
-                </div>
-                <div className="text-center">
-                  <div className="bg-white bg-opacity-20 rounded-lg px-3 py-2 min-w-[60px]">
-                    <div className="text-2xl font-bold">{String(timeLeft.minutes).padStart(2, '0')}</div>
-                    <div className="text-xs uppercase opacity-75">Mins</div>
+                  <div className="text-3xl font-bold text-yellow-300 px-2">:</div>
+                  <div className="text-center">
+                    <div className="bg-black bg-opacity-40 rounded-lg px-4 py-2 min-w-[70px] border-2 border-yellow-300">
+                      <div className="text-3xl font-bold text-yellow-300">{String(timeLeft.minutes).padStart(2, '0')}</div>
+                      <div className="text-xs font-bold uppercase text-yellow-200 tracking-wider">Min</div>
+                    </div>
                   </div>
-                </div>
-                <div className="text-center">
-                  <div className="bg-white bg-opacity-20 rounded-lg px-3 py-2 min-w-[60px]">
-                    <div className="text-2xl font-bold">{String(timeLeft.seconds).padStart(2, '0')}</div>
-                    <div className="text-xs uppercase opacity-75">Secs</div>
+                  <div className="text-3xl font-bold text-yellow-300 px-2">:</div>
+                  <div className="text-center">
+                    <div className="bg-black bg-opacity-40 rounded-lg px-4 py-2 min-w-[70px] border-2 border-yellow-300">
+                      <div className="text-3xl font-bold text-yellow-300">{String(timeLeft.seconds).padStart(2, '0')}</div>
+                      <div className="text-xs font-bold uppercase text-yellow-200 tracking-wider">Sec</div>
+                    </div>
                   </div>
                 </div>
               </div>
