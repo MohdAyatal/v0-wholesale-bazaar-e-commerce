@@ -45,7 +45,7 @@ export default function AboutPage() {
                 Who We Are
               </h2>
               <p className="text-lg mb-4" style={{ color: 'var(--text-secondary)' }}>
-                Wholesale Baazar is India&apos;s premier online marketplace connecting fashion enthusiasts with verified wholesale suppliers from Prayagraj. We specialize in ethnic wear, casual clothing, bridal collections, kids fashion, and accessories.
+                Wholesale Baazar is India&apos;s premier online marketplace connecting fashion enthusiasts with verified wholesale suppliers. We specialize in men&apos;s wear, women&apos;s fashion, kids clothing, accessories, and home and kitchen products.
               </p>
               <p className="text-lg mb-4" style={{ color: 'var(--text-secondary)' }}>
                 With over 15 years of combined experience in the fashion industry, our suppliers offer authentic quality products at competitive wholesale prices. Every supplier on our platform is carefully verified to ensure you receive the best products and service.
@@ -123,7 +123,8 @@ export default function AboutPage() {
                 <Phone size={24} style={{ color: 'var(--secondary)', flexShrink: 0 }} />
                 <div>
                   <h4 className="font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Phone</h4>
-                  <p style={{ color: 'var(--text-secondary)' }}>+91-9876-543210</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>+91-88401 30533</p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>WhatsApp: 8840130533</p>
                 </div>
               </div>
 
