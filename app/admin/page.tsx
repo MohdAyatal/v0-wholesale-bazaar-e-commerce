@@ -3,7 +3,7 @@
 import Header from '@/components/header'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Image as ImageIcon, Play } from 'lucide-react'
 
 interface Product {
   id: string
@@ -14,8 +14,20 @@ interface Product {
   discount_percent: number
 }
 
+interface SlideItem {
+  id: string
+  title: string
+  description: string
+  media_url: string
+  type: 'image' | 'video'
+  order: number
+  active: boolean
+}
+
 export default function AdminDashboard() {
+  const [tab, setTab] = useState<'products' | 'slideshow'>('products')
   const [products, setProducts] = useState<Product[]>([])
+  const [slides, setSlides] = useState<SlideItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -29,6 +41,14 @@ export default function AdminDashboard() {
     image_urls: [],
     discount_percent: 0,
     description: ''
+  })
+
+  const [slideFormData, setSlideFormData] = useState({
+    title: '',
+    description: '',
+    media_url: '',
+    type: 'image' as 'image' | 'video',
+    order: 0
   })
 
   useEffect(() => {
@@ -47,11 +67,13 @@ export default function AdminDashboard() {
       const { data: prods, count } = await supabase.from('products').select('*', { count: 'exact' })
       setProducts(prods || [])
 
+      // Fetch slides
+      const { data: slidesData } = await supabase.from('slideshow').select('*').order('order', { ascending: true })
+      setSlides(slidesData || [])
+
       // Calculate stats
       const totalOrdersData = await supabase.from('orders').select('*', { count: 'exact' })
-      const totalRevenueData = await supabase
-        .from('orders')
-        .select('total_amount')
+      const totalRevenueData = await supabase.from('orders').select('total_amount')
 
       const calculatedRevenue = totalRevenueData.data?.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0) || 0
 
@@ -78,13 +100,11 @@ export default function AdminDashboard() {
       const supabase = createClient()
 
       if (editingId) {
-        // Update existing product
         await supabase
           .from('products')
           .update(formData)
           .eq('id', editingId)
       } else {
-        // Add new product
         await supabase.from('products').insert([formData])
       }
 
@@ -105,6 +125,40 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleAddSlide = async () => {
+    if (!slideFormData.media_url) {
+      alert('Please provide a media URL')
+      return
+    }
+
+    try {
+      const supabase = createClient()
+
+      if (editingId) {
+        await supabase
+          .from('slideshow')
+          .update(slideFormData)
+          .eq('id', editingId)
+      } else {
+        await supabase.from('slideshow').insert([{ ...slideFormData, order: slides.length }])
+      }
+
+      fetchData()
+      setShowModal(false)
+      setEditingId(null)
+      setSlideFormData({
+        title: '',
+        description: '',
+        media_url: '',
+        type: 'image',
+        order: 0
+      })
+    } catch (error) {
+      console.error('Error saving slide:', error)
+      alert('Error saving slide')
+    }
+  }
+
   const handleDeleteProduct = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return
 
@@ -115,6 +169,19 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error deleting product:', error)
       alert('Error deleting product')
+    }
+  }
+
+  const handleDeleteSlide = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this slide?')) return
+
+    try {
+      const supabase = createClient()
+      await supabase.from('slideshow').delete().eq('id', id)
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting slide:', error)
+      alert('Error deleting slide')
     }
   }
 
@@ -131,6 +198,18 @@ export default function AdminDashboard() {
     setShowModal(true)
   }
 
+  const handleEditSlide = (slide: SlideItem) => {
+    setSlideFormData({
+      title: slide.title,
+      description: slide.description,
+      media_url: slide.media_url,
+      type: slide.type,
+      order: slide.order
+    })
+    setEditingId(slide.id)
+    setShowModal(true)
+  }
+
   const closeModal = () => {
     setShowModal(false)
     setEditingId(null)
@@ -141,6 +220,13 @@ export default function AdminDashboard() {
       image_urls: [],
       discount_percent: 0,
       description: ''
+    })
+    setSlideFormData({
+      title: '',
+      description: '',
+      media_url: '',
+      type: 'image',
+      order: 0
     })
   }
 
@@ -168,13 +254,37 @@ export default function AdminDashboard() {
             </h1>
             <p style={{ color: 'var(--text-secondary)' }}>Manage your wholesale inventory</p>
           </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 border-b" style={{ borderColor: 'var(--border)' }}>
           <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition hover:opacity-90"
-            style={{ backgroundColor: 'var(--primary)' }}
+            onClick={() => setTab('products')}
+            className={`px-6 py-3 font-semibold border-b-2 transition ${
+              tab === 'products'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-secondary hover:text-primary'
+            }`}
+            style={{
+              borderBottomColor: tab === 'products' ? 'var(--primary)' : 'transparent',
+              color: tab === 'products' ? 'var(--primary)' : 'var(--text-secondary)'
+            }}
           >
-            <Plus size={20} />
-            Add Product
+            Products
+          </button>
+          <button
+            onClick={() => setTab('slideshow')}
+            className={`px-6 py-3 font-semibold border-b-2 transition ${
+              tab === 'slideshow'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-secondary hover:text-primary'
+            }`}
+            style={{
+              borderBottomColor: tab === 'slideshow' ? 'var(--primary)' : 'transparent',
+              color: tab === 'slideshow' ? 'var(--primary)' : 'var(--text-secondary)'
+            }}
+          >
+            Slideshow
           </button>
         </div>
 
@@ -200,72 +310,160 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Products Table */}
-        <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-                <tr>
-                  <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Product Name
-                  </th>
-                  <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Category
-                  </th>
-                  <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Price
-                  </th>
-                  <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Discount
-                  </th>
-                  <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => (
-                  <tr
-                    key={product.id}
-                    className="border-t hover:opacity-80 transition"
-                    style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background)' }}
-                  >
-                    <td className="px-6 py-4" style={{ color: 'var(--text-primary)' }}>
-                      {product.name}
-                    </td>
-                    <td className="px-6 py-4" style={{ color: 'var(--text-secondary)' }}>
-                      {categories.find(c => c.id === product.category_id)?.name || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 font-semibold" style={{ color: 'var(--primary)' }}>
-                      ₹{product.price}
-                    </td>
-                    <td className="px-6 py-4" style={{ color: 'var(--text-secondary)' }}>
-                      {product.discount_percent}%
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditProduct(product)}
-                          className="p-2 rounded-lg transition hover:opacity-80"
-                          style={{ backgroundColor: 'var(--surface)' }}
-                        >
-                          <Edit2 size={18} style={{ color: 'var(--primary)' }} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduct(product.id)}
-                          className="p-2 rounded-lg transition hover:opacity-80"
-                          style={{ backgroundColor: 'var(--surface)' }}
-                        >
-                          <Trash2 size={18} style={{ color: 'var(--secondary)' }} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* Products Tab */}
+        {tab === 'products' && (
+          <>
+            <div className="mb-6">
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition hover:opacity-90"
+                style={{ backgroundColor: 'var(--primary)' }}
+              >
+                <Plus size={20} />
+                Add Product
+              </button>
+            </div>
+
+            <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+                    <tr>
+                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        Product Name
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        Category
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        Price
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        Discount
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((product) => (
+                      <tr
+                        key={product.id}
+                        className="border-t hover:opacity-80 transition"
+                        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background)' }}
+                      >
+                        <td className="px-6 py-4" style={{ color: 'var(--text-primary)' }}>
+                          {product.name}
+                        </td>
+                        <td className="px-6 py-4" style={{ color: 'var(--text-secondary)' }}>
+                          {categories.find(c => c.id === product.category_id)?.name || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 font-semibold" style={{ color: 'var(--primary)' }}>
+                          ₹{product.price}
+                        </td>
+                        <td className="px-6 py-4" style={{ color: 'var(--text-secondary)' }}>
+                          {product.discount_percent}%
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditProduct(product)}
+                              className="p-2 rounded-lg transition hover:opacity-80"
+                              style={{ backgroundColor: 'var(--surface)' }}
+                            >
+                              <Edit2 size={18} style={{ color: 'var(--primary)' }} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(product.id)}
+                              className="p-2 rounded-lg transition hover:opacity-80"
+                              style={{ backgroundColor: 'var(--surface)' }}
+                            >
+                              <Trash2 size={18} style={{ color: 'var(--secondary)' }} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Slideshow Tab */}
+        {tab === 'slideshow' && (
+          <>
+            <div className="mb-6">
+              <button
+                onClick={() => {
+                  setEditingId(null)
+                  setSlideFormData({
+                    title: '',
+                    description: '',
+                    media_url: '',
+                    type: 'image',
+                    order: 0
+                  })
+                  setShowModal(true)
+                }}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition hover:opacity-90"
+                style={{ backgroundColor: 'var(--primary)' }}
+              >
+                <Plus size={20} />
+                Add Slide
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {slides.map((slide) => (
+                <div
+                  key={slide.id}
+                  className="rounded-lg border overflow-hidden hover:shadow-lg transition"
+                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+                >
+                  <div className="relative h-40 bg-gray-200 flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
+                    {slide.type === 'image' ? (
+                      <ImageIcon size={40} style={{ color: 'var(--primary)', opacity: 0.3 }} />
+                    ) : (
+                      <Play size={40} style={{ color: 'var(--primary)', opacity: 0.3 }} />
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                      {slide.title || 'Untitled'}
+                    </h3>
+                    <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                      {slide.description || 'No description'}
+                    </p>
+                    <p className="text-xs mb-4 break-all" style={{ color: 'var(--text-secondary)' }}>
+                      {slide.media_url}
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditSlide(slide)}
+                        className="flex-1 p-2 rounded-lg transition hover:opacity-80 flex items-center justify-center gap-1"
+                        style={{ backgroundColor: 'var(--primary)', color: 'white' }}
+                      >
+                        <Edit2 size={16} />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSlide(slide.id)}
+                        className="flex-1 p-2 rounded-lg transition hover:opacity-80 flex items-center justify-center gap-1"
+                        style={{ backgroundColor: 'var(--secondary)', color: 'white' }}
+                      >
+                        <Trash2 size={16} />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal */}
@@ -277,7 +475,7 @@ export default function AdminDashboard() {
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {editingId ? 'Edit Product' : 'Add New Product'}
+                {tab === 'products' ? (editingId ? 'Edit Product' : 'Add New Product') : (editingId ? 'Edit Slide' : 'Add New Slide')}
               </h2>
               <button onClick={closeModal} className="p-1">
                 <X size={24} style={{ color: 'var(--text-secondary)' }} />
@@ -285,83 +483,163 @@ export default function AdminDashboard() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border"
-                  style={{ borderColor: 'var(--border)' }}
-                  placeholder="Enter product name"
-                />
-              </div>
+              {tab === 'products' ? (
+                <>
+                  <div>
+                    <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Product Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border"
+                      style={{ borderColor: 'var(--border)' }}
+                      placeholder="Enter product name"
+                    />
+                  </div>
 
-              <div>
-                <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Category *
-                </label>
-                <select
-                  value={formData.category_id}
-                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border"
-                  style={{ borderColor: 'var(--border)' }}
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <div>
+                    <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Category *
+                    </label>
+                    <select
+                      value={formData.category_id}
+                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border"
+                      style={{ borderColor: 'var(--border)' }}
+                    >
+                      <option value="">Select a category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div>
-                <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Price *
-                </label>
-                <input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                  className="w-full px-4 py-2 rounded-lg border"
-                  style={{ borderColor: 'var(--border)' }}
-                  placeholder="0"
-                />
-              </div>
+                  <div>
+                    <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Price *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                      className="w-full px-4 py-2 rounded-lg border"
+                      style={{ borderColor: 'var(--border)' }}
+                      placeholder="0"
+                    />
+                  </div>
 
-              <div>
-                <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Discount %
-                </label>
-                <input
-                  type="number"
-                  value={formData.discount_percent}
-                  onChange={(e) => setFormData({ ...formData, discount_percent: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 rounded-lg border"
-                  style={{ borderColor: 'var(--border)' }}
-                  placeholder="0"
-                />
-              </div>
+                  <div>
+                    <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Discount %
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.discount_percent}
+                      onChange={(e) => setFormData({ ...formData, discount_percent: parseInt(e.target.value) })}
+                      className="w-full px-4 py-2 rounded-lg border"
+                      style={{ borderColor: 'var(--border)' }}
+                      placeholder="0"
+                    />
+                  </div>
 
-              <div className="flex gap-4 pt-4">
-                <button
-                  onClick={handleAddProduct}
-                  className="flex-1 py-2 rounded-lg font-semibold text-white transition hover:opacity-90"
-                  style={{ backgroundColor: 'var(--primary)' }}
-                >
-                  {editingId ? 'Update' : 'Create'}
-                </button>
-                <button
-                  onClick={closeModal}
-                  className="flex-1 py-2 rounded-lg font-semibold border transition hover:opacity-90"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                >
-                  Cancel
-                </button>
-              </div>
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      onClick={handleAddProduct}
+                      className="flex-1 py-2 rounded-lg font-semibold text-white transition hover:opacity-90"
+                      style={{ backgroundColor: 'var(--primary)' }}
+                    >
+                      {editingId ? 'Update' : 'Create'}
+                    </button>
+                    <button
+                      onClick={closeModal}
+                      className="flex-1 py-2 rounded-lg font-semibold border transition hover:opacity-90"
+                      style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      value={slideFormData.title}
+                      onChange={(e) => setSlideFormData({ ...slideFormData, title: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border"
+                      style={{ borderColor: 'var(--border)' }}
+                      placeholder="Enter slide title"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Description
+                    </label>
+                    <textarea
+                      value={slideFormData.description}
+                      onChange={(e) => setSlideFormData({ ...slideFormData, description: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border"
+                      style={{ borderColor: 'var(--border)' }}
+                      placeholder="Enter slide description"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Media URL *
+                    </label>
+                    <input
+                      type="text"
+                      value={slideFormData.media_url}
+                      onChange={(e) => setSlideFormData({ ...slideFormData, media_url: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border"
+                      style={{ borderColor: 'var(--border)' }}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Media Type
+                    </label>
+                    <select
+                      value={slideFormData.type}
+                      onChange={(e) => setSlideFormData({ ...slideFormData, type: e.target.value as 'image' | 'video' })}
+                      className="w-full px-4 py-2 rounded-lg border"
+                      style={{ borderColor: 'var(--border)' }}
+                    >
+                      <option value="image">Image</option>
+                      <option value="video">Video</option>
+                    </select>
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      onClick={handleAddSlide}
+                      className="flex-1 py-2 rounded-lg font-semibold text-white transition hover:opacity-90"
+                      style={{ backgroundColor: 'var(--primary)' }}
+                    >
+                      {editingId ? 'Update' : 'Create'}
+                    </button>
+                    <button
+                      onClick={closeModal}
+                      className="flex-1 py-2 rounded-lg font-semibold border transition hover:opacity-90"
+                      style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
