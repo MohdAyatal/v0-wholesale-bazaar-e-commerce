@@ -3,11 +3,14 @@
 import Header from '@/components/header'
 import FloatingChatbot from '@/components/floating-chatbot'
 import HomeCarousel from '@/components/home-carousel'
+import FlashSaleSection from '@/components/flash-sale-section'
+import TrustBadges from '@/components/trust-badges'
+import NewsletterSection from '@/components/newsletter-section'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Star, ShoppingBag, TrendingUp } from 'lucide-react'
+import { Star, ShoppingBag } from 'lucide-react'
 
 export default function Home() {
   const [featured, setFeatured] = useState<any[]>([])
@@ -47,6 +50,16 @@ export default function Home() {
           <HomeCarousel />
         </div>
       </section>
+
+      {/* Flash Sale Section */}
+      <FlashSaleSection 
+        title="Flash Sale - Limited Time!" 
+        discount={30}
+        endTime={new Date(Date.now() + 4 * 60 * 60 * 1000)}
+      />
+
+      {/* Trust Badges */}
+      <TrustBadges />
 
       {/* Categories - Horizontal Scroll (Flipkart Style) */}
       <section className="py-8">
@@ -148,6 +161,9 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      {/* Newsletter Section */}
+      <NewsletterSection />
 
       {/* Footer */}
       <footer style={{ backgroundColor: '#1F2937', color: 'white' }} className="py-12">

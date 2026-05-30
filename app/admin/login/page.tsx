@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Lock } from 'lucide-react'
+import { Lock, Mail, AlertCircle } from 'lucide-react'
 
 export default function AdminLoginPage() {
+  const [email, setEmail] = useState('admin@wholesalebaazar.com')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,63 +16,97 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError('')
 
-    // Demo credentials: password is "admin123"
-    if (password === 'admin123') {
-      sessionStorage.setItem('admin_token', 'fairpath_admin_demo_2024')
-      router.push('/admin')
-    } else {
-      setError('Invalid password. Try: admin123')
+    try {
+      const response = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+
+      if (response.ok) {
+        sessionStorage.setItem('admin_token', 'fairpath_admin_demo_2024')
+        router.push('/admin')
+      } else {
+        setError('Invalid email or password')
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.')
     }
     setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-slate-800 rounded-lg shadow-2xl p-8">
-          <div className="flex justify-center mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Lock className="text-white" size={24} />
-            </div>
-          </div>
+    <main style={{ backgroundColor: 'var(--background)' }} className="min-h-screen flex items-center justify-center py-12 px-4">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+            <span style={{ color: 'var(--primary)' }}>Wholesale</span>
+            <span style={{ color: 'var(--secondary)' }}> Baazar</span>
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Admin Portal</p>
+        </div>
 
-          <h1 className="text-2xl font-bold text-white text-center mb-2">Admin Login</h1>
-          <p className="text-slate-400 text-center text-sm mb-8">Demo credentials: Password is "admin123"</p>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="text-sm font-semibold text-slate-300 block mb-2">Admin Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="Enter admin password"
-              />
-            </div>
-
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="p-8 rounded-xl border" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                {error}
+              <div className="mb-6 p-4 rounded-lg flex gap-3" style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}>
+                <AlertCircle size={20} className="flex-shrink-0" />
+                <p className="text-sm">{error}</p>
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-blue-500/50 transition-all disabled:opacity-50"
-            >
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail size={18} className="absolute left-3 top-3" style={{ color: 'var(--text-secondary)' }} />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border"
+                    style={{ borderColor: 'var(--border)' }}
+                    required
+                  />
+                </div>
+              </div>
 
-          <div className="mt-6 pt-6 border-t border-slate-700">
-            <p className="text-xs text-slate-500 text-center">
-              This is a demo environment. In production, use proper authentication.
-            </p>
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock size={18} className="absolute left-3 top-3" style={{ color: 'var(--text-secondary)' }} />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border"
+                    style={{ borderColor: 'var(--border)' }}
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2 rounded-lg font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: 'var(--primary)' }}
+              >
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </div>
           </div>
-        </div>
+
+          <p className="text-center text-xs" style={{ color: 'var(--text-secondary)' }}>
+            Demo credentials: admin@wholesalebaazar.com / admin123
+          </p>
+        </form>
       </div>
-    </div>
+    </main>
   )
 }
