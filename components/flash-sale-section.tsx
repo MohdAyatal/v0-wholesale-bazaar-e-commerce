@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Flame, Clock } from 'lucide-react'
+import Link from 'next/link'
 
 interface FlashSaleProps {
   title?: string
@@ -77,9 +78,9 @@ export default function FlashSaleSection({ title = 'Flash Sale', discount = 30, 
                 </div>
               </div>
 
-              <button className="px-6 py-3 bg-white rounded-lg font-bold transition hover:bg-opacity-90" style={{ color: 'var(--secondary)' }}>
+              <Link href="/products" className="px-6 py-3 bg-white rounded-lg font-bold transition hover:bg-opacity-90 active:scale-95" style={{ color: 'var(--secondary)' }}>
                 Shop Now
-              </button>
+              </Link>
             </div>
           </div>
         </div>
