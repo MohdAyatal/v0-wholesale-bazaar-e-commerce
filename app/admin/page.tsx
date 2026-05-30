@@ -25,7 +25,7 @@ interface SlideItem {
 }
 
 export default function AdminDashboard() {
-  const [tab, setTab] = useState<'products' | 'slideshow'>('products')
+  const [tab, setTab] = useState<'products' | 'slideshow' | 'orders'>('products')
   const [products, setProducts] = useState<Product[]>([])
   const [slides, setSlides] = useState<SlideItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -257,10 +257,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-8 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div className="flex gap-4 mb-8 border-b overflow-x-auto" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={() => setTab('products')}
-            className={`px-6 py-3 font-semibold border-b-2 transition ${
+            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
               tab === 'products'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-secondary hover:text-primary'
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setTab('slideshow')}
-            className={`px-6 py-3 font-semibold border-b-2 transition ${
+            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
               tab === 'slideshow'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-secondary hover:text-primary'
@@ -285,6 +285,20 @@ export default function AdminDashboard() {
             }}
           >
             Slideshow
+          </button>
+          <button
+            onClick={() => setTab('orders')}
+            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
+              tab === 'orders'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-secondary hover:text-primary'
+            }`}
+            style={{
+              borderBottomColor: tab === 'orders' ? 'var(--primary)' : 'transparent',
+              color: tab === 'orders' ? 'var(--primary)' : 'var(--text-secondary)'
+            }}
+          >
+            Orders
           </button>
         </div>
 
@@ -463,6 +477,69 @@ export default function AdminDashboard() {
               ))}
             </div>
           </>
+        )}
+
+        {/* Orders Tab */}
+        {tab === 'orders' && (
+          <div className="space-y-6">
+            <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+                    <tr>
+                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        Order Number
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        Customer Email
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        Amount
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        Status
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        Payment
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        Date
+                      </th>
+                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.totalOrders === 0 ? (
+                      <tr style={{ borderColor: 'var(--border)' }}>
+                        <td colSpan={7} className="px-6 py-8 text-center" style={{ color: 'var(--text-secondary)' }}>
+                          No orders yet. Start receiving orders and they will appear here.
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr style={{ borderColor: 'var(--border)' }}>
+                        <td colSpan={7} className="px-6 py-8 text-center">
+                          <div className="flex justify-center items-center gap-4">
+                            <a
+                              href="/admin/orders"
+                              className="px-6 py-2 rounded-lg font-medium text-white transition hover:opacity-90"
+                              style={{ backgroundColor: 'var(--primary)' }}
+                            >
+                              View All Orders
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              💡 Tip: Click &quot;View All Orders&quot; to access the full order management dashboard with filtering, sorting, and order details.
+            </p>
+          </div>
         )}
       </div>
 

@@ -27,6 +27,7 @@ export default function Header() {
           {/* Navigation - Desktop */}
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/products" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Products</Link>
+            <Link href="/orders" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>My Orders</Link>
             <Link href="/about" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>About</Link>
             <Link href="/contact" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Contact</Link>
           </nav>
@@ -76,6 +77,7 @@ export default function Header() {
         {isOpen && (
           <nav className="md:hidden pb-4 border-t flex flex-col gap-3" style={{ borderColor: 'var(--border)' }}>
             <Link href="/products" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Products</Link>
+            <Link href="/orders" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>My Orders</Link>
             <Link href="/about" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>About</Link>
             <Link href="/contact" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Contact</Link>
             <button 
