@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { useCart } from '@/lib/cart-context'
 import { ShoppingBag, Search, Menu, X, LogIn, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 
 const WHATSAPP_NUMBER = '8840130533'
-
+const { items } = useCart()
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -47,9 +48,11 @@ export default function Header() {
             </div>
             
             <Link href="/cart" className="relative transition hover:opacity-80" style={{ color: 'var(--primary)' }}>
-              <ShoppingBag size={24} />
-              <span className="absolute -top-2 -right-2 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold" style={{ backgroundColor: 'var(--secondary)' }}>0</span>
-            </Link>
+              <ShoppingBag size={24} /> 
+              {items.length > 0 && (
+                <span className="absolute -top-2 -right-2 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold" style={{ backgroundColor: 'var(--secondary)' }}>{items.length}</span>
+            )}
+              </Link>
 
             <button 
               onClick={openWhatsApp}
