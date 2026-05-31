@@ -1,120 +1,76 @@
 import Link from 'next/link'
-import { Mail, Phone, MapPin } from 'lucide-react'
+import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react'
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-950 border-t border-slate-800">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer style={{ backgroundColor: '#1F2937', color: 'white' }} className="py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Company Info */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">FP</span>
-              </div>
-              <span className="text-xl font-bold text-white">FairPath</span>
+              <span className="font-bold text-xl">
+                <span style={{ color: 'var(--primary-light, #14B8A6)' }}>Wholesale</span>
+                <span style={{ color: 'var(--secondary, #FF6B6B)' }}> Baazar</span>
+              </span>
             </div>
-            <p className="text-slate-400 text-sm">
-              Premium wholesale marketplace connecting businesses with verified suppliers worldwide.
+            <p className="text-gray-400 text-sm">
+              Premium fashion marketplace connecting verified suppliers with wholesale buyers across India.
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold text-white mb-4">Quick Links</h3>
+            <h3 className="font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              <li>
-                <Link href="/products" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  Browse Products
-                </Link>
-              </li>
-              <li>
-                <Link href="/suppliers" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  Find Suppliers
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  Contact
-                </Link>
-              </li>
+              {[['products','Products'],['suppliers','Suppliers'],['about','About Us'],['contact','Contact']].map(([href, label]) => (
+                <li key={href}>
+                  <Link href={`/${href}`} className="text-gray-400 hover:text-white transition-colors text-sm">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Support */}
           <div>
-            <h3 className="font-semibold text-white mb-4">Support</h3>
+            <h3 className="font-semibold mb-4">Support</h3>
             <ul className="space-y-2">
-              <li>
-                <Link href="/help" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  Help Center
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  Terms of Service
-                </Link>
-              </li>
+              {[['#','FAQ'],['#','Shipping Info'],['#','Return Policy'],['#','Privacy Policy']].map(([href, label]) => (
+                <li key={label}>
+                  <Link href={href} className="text-gray-400 hover:text-white transition-colors text-sm">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Contact Info */}
+          {/* Contact */}
           <div>
-            <h3 className="font-semibold text-white mb-4">Contact</h3>
+            <h3 className="font-semibold mb-4">Contact</h3>
             <ul className="space-y-2">
               <li className="flex items-center gap-2">
-                <Mail size={16} className="text-blue-400" />
-                <a href="mailto:hello@fairpath.com" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  hello@fairpath.com
+                <Mail size={16} style={{ color: 'var(--primary-light, #14B8A6)' }} />
+                <a href="mailto:info@wholesalebaazar.in" className="text-gray-400 hover:text-white text-sm">
+                  info@wholesalebaazar.in
                 </a>
               </li>
               <li className="flex items-center gap-2">
-                <Phone size={16} className="text-blue-400" />
-                <a href="tel:+1-555-0100" className="text-slate-400 hover:text-white transition-colors text-sm">
-                  +1-555-0100
-                </a>
+                <Phone size={16} style={{ color: 'var(--primary-light, #14B8A6)' }} />
+                <span className="text-gray-400 text-sm">+91-9876-543210</span>
               </li>
               <li className="flex items-start gap-2">
-                <MapPin size={16} className="text-blue-400 mt-0.5" />
-                <span className="text-slate-400 text-sm">123 Trade Ave, Commerce City, CC 12345</span>
+                <MapPin size={16} style={{ color: 'var(--primary-light, #14B8A6)', marginTop: 2 }} />
+                <span className="text-gray-400 text-sm">Prayagraj, Uttar Pradesh 211001, India</span>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className="border-t border-slate-800 pt-8">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <p className="text-slate-400 text-sm mb-4 md:mb-0">
-              © {new Date().getFullYear()} FairPath. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              <a href="#" className="text-slate-400 hover:text-white transition-colors">
-                Twitter
-              </a>
-              <a href="#" className="text-slate-400 hover:text-white transition-colors">
-                LinkedIn
-              </a>
-              <a href="#" className="text-slate-400 hover:text-white transition-colors">
-                Facebook
-              </a>
-            </div>
-          </div>
+        <div className="border-t border-gray-700 pt-8 text-center text-gray-400 text-sm">
+          <p>© {new Date().getFullYear()} Wholesale Baazar. All rights reserved.</p>
         </div>
       </div>
     </footer>
