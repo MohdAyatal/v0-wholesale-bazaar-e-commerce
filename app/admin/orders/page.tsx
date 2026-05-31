@@ -72,7 +72,7 @@ const ADMIN_ORDERS: AdminOrder[] = [
     status: 'confirmed',
     payment_status: 'completed',
     payment_method: 'netbanking',
-    tracking_number: null,
+    tracking_number: undefined,
     created_at: '2024-05-31',
     items_count: 1
   },
@@ -86,7 +86,7 @@ const ADMIN_ORDERS: AdminOrder[] = [
     status: 'pending',
     payment_status: 'pending',
     payment_method: 'cash_on_delivery',
-    tracking_number: null,
+    tracking_number: undefined,
     created_at: '2024-05-31',
     items_count: 1
   }
