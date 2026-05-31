@@ -6,12 +6,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }  // <-- CHANGED: Added Promise<...>
-) {
+export async function GET(request: Request) {
   try {
-    const { id } = await params;  // <-- CHANGED: Added await here
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const status = searchParams.get('status');
@@ -21,7 +17,6 @@ export async function GET(
     let query = supabase
       .from('orders')
       .select('*, order_items(*)', { count: 'exact' })
-      .eq('id', id)
       .order('created_at', { ascending: false });
 
     if (userId) {
