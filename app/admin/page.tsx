@@ -34,14 +34,23 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<any[]>([])
   const [stats, setStats] = useState({ totalProducts: 0, totalOrders: 0, totalRevenue: 0 })
 
-  const [formData, setFormData] = useState({
-    name: '',
-    price: 0,
-    category_id: '',
-    image_urls: [],
-    discount_percent: 0,
-    description: ''
-  })
+ interface ProductFormData {
+  name: string
+  price: number
+  category_id: string
+  image_urls: string[]
+  discount_percent: number
+  description: string
+}
+
+const [formData, setFormData] = useState<ProductFormData>({
+  name: '',
+  price: 0,
+  category_id: '',
+  image_urls: [],
+  discount_percent: 0,
+  description: ''
+})
 
   const [slideFormData, setSlideFormData] = useState({
     title: '',
@@ -111,14 +120,14 @@ export default function AdminDashboard() {
       fetchData()
       setShowModal(false)
       setEditingId(null)
-      setFormData({
-        name: '',
-        price: 0,
-        category_id: '',
-        image_urls: [],
-        discount_percent: 0,
-        description: ''
-      })
+     setFormData({
+  name: '',
+  price: 0,
+  category_id: '',
+  image_urls: [] as string[],
+  discount_percent: 0,
+  description: ''
+})
     } catch (error) {
       console.error('Error saving product:', error)
       alert('Error saving product')
@@ -190,7 +199,7 @@ export default function AdminDashboard() {
       name: product.name,
       price: product.price,
       category_id: product.category_id,
-      image_urls: product.image_urls || [],
+      image_urls: (product.image_urls || []) as string[],
       discount_percent: product.discount_percent || 0,
       description: ''
     })
@@ -213,14 +222,14 @@ export default function AdminDashboard() {
   const closeModal = () => {
     setShowModal(false)
     setEditingId(null)
-    setFormData({
-      name: '',
-      price: 0,
-      category_id: '',
-      image_urls: [],
-      discount_percent: 0,
-      description: ''
-    })
+   setFormData({
+  name: '',
+  price: 0,
+  category_id: '',
+  image_urls: [] as string[],
+  discount_percent: 0,
+  description: ''
+})
     setSlideFormData({
       title: '',
       description: '',
