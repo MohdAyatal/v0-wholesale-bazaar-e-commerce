@@ -56,15 +56,15 @@ NEXT_PUBLIC_RAZORPAY_KEY=your_public_key
 **Using SendGrid (Recommended):**
 ```env
 SENDGRID_API_KEY=your_sendgrid_api_key
-EMAIL_FROM=noreply@wholesalebaazar.com
+EMAIL_FROM=wholesalebazaar.support@gmail.com
 ```
 
 **Using Gmail:**
 ```env
 EMAIL_SERVICE=gmail
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_app_password
-ADMIN_EMAIL=admin@wholesalebaazar.com
+EMAIL_USER=wholesalebazaar.support@gmail.com
+EMAIL_PASSWORD=nxxhtsndvhofnijb
+ADMIN_EMAIL=wholesalebazaar.support@gmail.com
 ```
 
 **How to get Gmail App Password:**
