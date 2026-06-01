@@ -93,7 +93,7 @@ export default function ContactPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2"
-                  style={{ borderColor: 'var(--border)' }}
+                  style={{ borderColor: 'var(--border)'}}
                   required
                   placeholder="Your name"
                 />
