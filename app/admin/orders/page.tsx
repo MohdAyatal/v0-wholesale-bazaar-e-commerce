@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Package, Filter, Download, Edit2, Eye, Trash2, Plus, ChevronDown } from 'lucide-react';
+import { Package, Filter, Download, Edit2, Eye, Trash2, Plus} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AdminOrder {
