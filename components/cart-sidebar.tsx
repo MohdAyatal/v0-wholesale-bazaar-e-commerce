@@ -11,7 +11,7 @@ interface CartSidebarProps {
 }
 
 export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
-  const { items, removeItem, updateQuantity, totalprice, clearCart } = useCart()
+  const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart()
 
   if (!isOpen) return null
 
@@ -93,7 +93,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
           <div className="border-t p-6" style={{ borderColor: 'var(--border)' }}>
             <div className="flex justify-between items-center mb-4">
               <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Subtotal:</span>
-              <span className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>₹{totalprice.toFixed(2)}</span>
+              <span className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>₹{totalPrice.toFixed(2)}</span>
             </div>
             <Link href="/checkout" className="w-full block py-3 rounded-lg font-bold text-white text-center transition hover:opacity-90 mb-2" style={{ backgroundColor: 'var(--primary)' }}>
               Proceed to Checkout
