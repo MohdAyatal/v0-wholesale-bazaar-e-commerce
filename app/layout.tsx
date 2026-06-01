@@ -4,30 +4,12 @@ import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/lib/cart-context'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const geist = Geist({ subsets: ['latin'] })
+const geistMono = Geist_Mono({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Wholesale Baazar - Premium Wholesale Marketplace',
-  description: 'Connect with verified suppliers and source high-quality products at competitive wholesale prices',
-  generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
+  title: 'Wholesale Baazar - Premium Fashion Marketplace',
+  description: 'Discover premium ethnic wear, bridal collections & accessories from verified suppliers in Prayagraj.',
 }
 
 export default function RootLayout({
@@ -36,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
-      <body className="font-sans antialiased bg-background">
+    <html lang="en">
+      <body className={geist.className}>
         <CartProvider>
           {children}
         </CartProvider>
