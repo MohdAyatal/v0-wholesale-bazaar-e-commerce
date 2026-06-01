@@ -23,6 +23,10 @@ export default function AdminLoginPage() {
 
     if (password === ADMIN_PASSWORD) {
       sessionStorage.setItem('wb_admin_token', 'wb_admin_2025_secure')
+      sessionStorage.setItem(
+  'wb_admin_expiry',
+  (Date.now() + 15 * 60 * 1000).toString() // 30 minutes
+)
       router.push('/admin')
     } else {
       setError('Incorrect password. Please try again.')
