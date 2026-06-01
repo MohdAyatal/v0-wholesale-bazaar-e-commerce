@@ -11,7 +11,7 @@ interface CartSidebarProps {
 }
 
 export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
-  const { items, removeItem, updateQuantity, total, clearCart } = useCart()
+  const { items, removeItem, updateQuantity, totalprice, clearCart } = useCart()
 
   if (!isOpen) return null
 
@@ -45,9 +45,9 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
           ) : (
             items.map(item => (
               <div key={item.id} className="flex gap-4 p-4 rounded-lg border" style={{ borderColor: 'var(--border)' }}>
-                {item.image && (
+                {item.image_urls?.[0]  && (
                   <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                    <Image src={item.image} alt={item.name} fill className="object-cover" />
+                    <Image src={item.image_urls[0]} alt={item.name} fill className="object-cover" />
                   </div>
                 )}
                 <div className="flex-1">
@@ -93,7 +93,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
           <div className="border-t p-6" style={{ borderColor: 'var(--border)' }}>
             <div className="flex justify-between items-center mb-4">
               <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Subtotal:</span>
-              <span className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>₹{total.toFixed(2)}</span>
+              <span className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>₹{totalprice.toFixed(2)}</span>
             </div>
             <Link href="/checkout" className="w-full block py-3 rounded-lg font-bold text-white text-center transition hover:opacity-90 mb-2" style={{ backgroundColor: 'var(--primary)' }}>
               Proceed to Checkout
