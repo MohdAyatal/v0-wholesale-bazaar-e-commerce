@@ -24,6 +24,15 @@ interface SlideItem {
   active: boolean
 }
 
+interface ProductFormData {
+  name: string
+  price: number
+  category_id: string
+  image_urls: string[]
+  discount_percent: number
+  description: string
+}
+
 export default function AdminDashboard() {
   const [tab, setTab] = useState<'products' | 'slideshow' | 'orders'>('products')
   const [products, setProducts] = useState<Product[]>([])
@@ -34,23 +43,14 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<any[]>([])
   const [stats, setStats] = useState({ totalProducts: 0, totalOrders: 0, totalRevenue: 0 })
 
- interface ProductFormData {
-  name: string
-  price: number
-  category_id: string
-  image_urls: string[]
-  discount_percent: number
-  description: string
-}
-
-const [formData, setFormData] = useState<ProductFormData>({
-  name: '',
-  price: 0,
-  category_id: '',
-  image_urls: [],
-  discount_percent: 0,
-  description: ''
-})
+  const [formData, setFormData] = useState<ProductFormData>({
+    name: '',
+    price: 0,
+    category_id: '',
+    image_urls: [] as string[],
+    discount_percent: 0,
+    description: ''
+  })
 
   const [slideFormData, setSlideFormData] = useState({
     title: '',
@@ -68,19 +68,15 @@ const [formData, setFormData] = useState<ProductFormData>({
     try {
       const supabase = createClient()
 
-      // Fetch categories
       const { data: cats } = await supabase.from('categories').select('*')
       setCategories(cats || [])
 
-      // Fetch products
       const { data: prods, count } = await supabase.from('products').select('*', { count: 'exact' })
       setProducts(prods || [])
 
-      // Fetch slides
       const { data: slidesData } = await supabase.from('slideshow').select('*').order('order', { ascending: true })
       setSlides(slidesData || [])
 
-      // Calculate stats
       const totalOrdersData = await supabase.from('orders').select('*', { count: 'exact' })
       const totalRevenueData = await supabase.from('orders').select('total_amount')
 
@@ -109,10 +105,7 @@ const [formData, setFormData] = useState<ProductFormData>({
       const supabase = createClient()
 
       if (editingId) {
-        await supabase
-          .from('products')
-          .update(formData)
-          .eq('id', editingId)
+        await supabase.from('products').update(formData).eq('id', editingId)
       } else {
         await supabase.from('products').insert([formData])
       }
@@ -120,14 +113,14 @@ const [formData, setFormData] = useState<ProductFormData>({
       fetchData()
       setShowModal(false)
       setEditingId(null)
-     setFormData({
-  name: '',
-  price: 0,
-  category_id: '',
-  image_urls: [] as string[],
-  discount_percent: 0,
-  description: ''
-})
+      setFormData({
+        name: '',
+        price: 0,
+        category_id: '',
+        image_urls: [] as string[],
+        discount_percent: 0,
+        description: ''
+      })
     } catch (error) {
       console.error('Error saving product:', error)
       alert('Error saving product')
@@ -144,10 +137,7 @@ const [formData, setFormData] = useState<ProductFormData>({
       const supabase = createClient()
 
       if (editingId) {
-        await supabase
-          .from('slideshow')
-          .update(slideFormData)
-          .eq('id', editingId)
+        await supabase.from('slideshow').update(slideFormData).eq('id', editingId)
       } else {
         await supabase.from('slideshow').insert([{ ...slideFormData, order: slides.length }])
       }
@@ -222,14 +212,14 @@ const [formData, setFormData] = useState<ProductFormData>({
   const closeModal = () => {
     setShowModal(false)
     setEditingId(null)
-   setFormData({
-  name: '',
-  price: 0,
-  category_id: '',
-  image_urls: [] as string[],
-  discount_percent: 0,
-  description: ''
-})
+    setFormData({
+      name: '',
+      price: 0,
+      category_id: '',
+      image_urls: [] as string[],
+      discount_percent: 0,
+      description: ''
+    })
     setSlideFormData({
       title: '',
       description: '',
@@ -255,6 +245,7 @@ const [formData, setFormData] = useState<ProductFormData>({
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -267,48 +258,19 @@ const [formData, setFormData] = useState<ProductFormData>({
 
         {/* Tabs */}
         <div className="flex gap-4 mb-8 border-b overflow-x-auto" style={{ borderColor: 'var(--border)' }}>
-          <button
-            onClick={() => setTab('products')}
-            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
-              tab === 'products'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-secondary hover:text-primary'
-            }`}
-            style={{
-              borderBottomColor: tab === 'products' ? 'var(--primary)' : 'transparent',
-              color: tab === 'products' ? 'var(--primary)' : 'var(--text-secondary)'
-            }}
-          >
-            Products
-          </button>
-          <button
-            onClick={() => setTab('slideshow')}
-            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
-              tab === 'slideshow'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-secondary hover:text-primary'
-            }`}
-            style={{
-              borderBottomColor: tab === 'slideshow' ? 'var(--primary)' : 'transparent',
-              color: tab === 'slideshow' ? 'var(--primary)' : 'var(--text-secondary)'
-            }}
-          >
-            Slideshow
-          </button>
-          <button
-            onClick={() => setTab('orders')}
-            className={`px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap ${
-              tab === 'orders'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-secondary hover:text-primary'
-            }`}
-            style={{
-              borderBottomColor: tab === 'orders' ? 'var(--primary)' : 'transparent',
-              color: tab === 'orders' ? 'var(--primary)' : 'var(--text-secondary)'
-            }}
-          >
-            Orders
-          </button>
+          {(['products', 'slideshow', 'orders'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className="px-6 py-3 font-semibold border-b-2 transition whitespace-nowrap capitalize"
+              style={{
+                borderBottomColor: tab === t ? 'var(--primary)' : 'transparent',
+                color: tab === t ? 'var(--primary)' : 'var(--text-secondary)'
+              }}
+            >
+              {t}
+            </button>
+          ))}
         </div>
 
         {/* Stats */}
@@ -333,7 +295,7 @@ const [formData, setFormData] = useState<ProductFormData>({
           </div>
         </div>
 
-        {/* Products Tab */}
+        {/* ── PRODUCTS TAB ── */}
         {tab === 'products' && (
           <>
             <div className="mb-6">
@@ -352,21 +314,11 @@ const [formData, setFormData] = useState<ProductFormData>({
                 <table className="w-full">
                   <thead style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
                     <tr>
-                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        Product Name
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        Category
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        Price
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        Discount
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        Actions
-                      </th>
+                      {['Product Name', 'Category', 'Price', 'Discount', 'Actions'].map((h) => (
+                        <th key={h} className="px-6 py-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -415,20 +367,14 @@ const [formData, setFormData] = useState<ProductFormData>({
           </>
         )}
 
-        {/* Slideshow Tab */}
+        {/* ── SLIDESHOW TAB ── */}
         {tab === 'slideshow' && (
           <>
             <div className="mb-6">
               <button
                 onClick={() => {
                   setEditingId(null)
-                  setSlideFormData({
-                    title: '',
-                    description: '',
-                    media_url: '',
-                    type: 'image',
-                    order: 0
-                  })
+                  setSlideFormData({ title: '', description: '', media_url: '', type: 'image', order: 0 })
                   setShowModal(true)
                 }}
                 className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition hover:opacity-90"
@@ -446,7 +392,10 @@ const [formData, setFormData] = useState<ProductFormData>({
                   className="rounded-lg border overflow-hidden hover:shadow-lg transition"
                   style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
                 >
-                  <div className="relative h-40 bg-gray-200 flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
+                  <div
+                    className="relative h-40 flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--background)' }}
+                  >
                     {slide.type === 'image' ? (
                       <ImageIcon size={40} style={{ color: 'var(--primary)', opacity: 0.3 }} />
                     ) : (
@@ -466,16 +415,16 @@ const [formData, setFormData] = useState<ProductFormData>({
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditSlide(slide)}
-                        className="flex-1 p-2 rounded-lg transition hover:opacity-80 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: 'var(--primary)', color: 'white' }}
+                        className="flex-1 p-2 rounded-lg transition hover:opacity-80 flex items-center justify-center gap-1 text-white"
+                        style={{ backgroundColor: 'var(--primary)' }}
                       >
                         <Edit2 size={16} />
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteSlide(slide.id)}
-                        className="flex-1 p-2 rounded-lg transition hover:opacity-80 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: 'var(--secondary)', color: 'white' }}
+                        className="flex-1 p-2 rounded-lg transition hover:opacity-80 flex items-center justify-center gap-1 text-white"
+                        style={{ backgroundColor: 'var(--secondary)' }}
                       >
                         <Trash2 size={16} />
                         Delete
@@ -488,7 +437,7 @@ const [formData, setFormData] = useState<ProductFormData>({
           </>
         )}
 
-        {/* Orders Tab */}
+        {/* ── ORDERS TAB ── */}
         {tab === 'orders' && (
           <div className="space-y-6">
             <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
@@ -496,48 +445,30 @@ const [formData, setFormData] = useState<ProductFormData>({
                 <table className="w-full">
                   <thead style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
                     <tr>
-                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                        Order Number
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                        Customer Email
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                        Amount
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                        Status
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                        Payment
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                        Date
-                      </th>
-                      <th className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                        Actions
-                      </th>
+                      {['Order Number', 'Customer Email', 'Amount', 'Status', 'Payment', 'Date', 'Actions'].map((h) => (
+                        <th key={h} className="px-6 py-4 text-left font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {stats.totalOrders === 0 ? (
-                      <tr style={{ borderColor: 'var(--border)' }}>
+                      <tr>
                         <td colSpan={7} className="px-6 py-8 text-center" style={{ color: 'var(--text-secondary)' }}>
                           No orders yet. Start receiving orders and they will appear here.
                         </td>
                       </tr>
                     ) : (
-                      <tr style={{ borderColor: 'var(--border)' }}>
+                      <tr>
                         <td colSpan={7} className="px-6 py-8 text-center">
-                          <div className="flex justify-center items-center gap-4">
-                            <a
-                              href="/admin/orders"
-                              className="px-6 py-2 rounded-lg font-medium text-white transition hover:opacity-90"
-                              style={{ backgroundColor: 'var(--primary)' }}
-                            >
-                              View All Orders
-                            </a>
-                          </div>
+                          <a
+                            href="/admin/orders"
+                            className="px-6 py-2 rounded-lg font-medium text-white transition hover:opacity-90"
+                            style={{ backgroundColor: 'var(--primary)' }}
+                          >
+                            View All Orders
+                          </a>
                         </td>
                       </tr>
                     )}
@@ -546,22 +477,24 @@ const [formData, setFormData] = useState<ProductFormData>({
               </div>
             </div>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              💡 Tip: Click &quot;View All Orders&quot; to access the full order management dashboard with filtering, sorting, and order details.
+              💡 Tip: Click &quot;View All Orders&quot; to access the full order management dashboard.
             </p>
           </div>
         )}
       </div>
 
-      {/* Modal */}
+      {/* ── MODAL ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div
-            className="bg-white rounded-xl p-8 max-w-md w-full"
+            className="rounded-xl p-8 max-w-md w-full"
             style={{ backgroundColor: 'var(--surface)' }}
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {tab === 'products' ? (editingId ? 'Edit Product' : 'Add New Product') : (editingId ? 'Edit Slide' : 'Add New Slide')}
+                {tab === 'products'
+                  ? (editingId ? 'Edit Product' : 'Add New Product')
+                  : (editingId ? 'Edit Slide' : 'Add New Slide')}
               </h2>
               <button onClick={closeModal} className="p-1">
                 <X size={24} style={{ color: 'var(--text-secondary)' }} />
@@ -569,7 +502,9 @@ const [formData, setFormData] = useState<ProductFormData>({
             </div>
 
             <div className="space-y-4">
-              {tab === 'products' ? (
+
+              {/* Product Form */}
+              {tab === 'products' && (
                 <>
                   <div>
                     <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -579,7 +514,7 @@ const [formData, setFormData] = useState<ProductFormData>({
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border"
+                      className="w-full px-4 py-2 rounded-lg border outline-none"
                       style={{ borderColor: 'var(--border)' }}
                       placeholder="Enter product name"
                     />
@@ -592,7 +527,7 @@ const [formData, setFormData] = useState<ProductFormData>({
                     <select
                       value={formData.category_id}
                       onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border"
+                      className="w-full px-4 py-2 rounded-lg border outline-none"
                       style={{ borderColor: 'var(--border)' }}
                     >
                       <option value="">Select a category</option>
@@ -612,7 +547,7 @@ const [formData, setFormData] = useState<ProductFormData>({
                       type="number"
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                      className="w-full px-4 py-2 rounded-lg border"
+                      className="w-full px-4 py-2 rounded-lg border outline-none"
                       style={{ borderColor: 'var(--border)' }}
                       placeholder="0"
                     />
@@ -626,9 +561,23 @@ const [formData, setFormData] = useState<ProductFormData>({
                       type="number"
                       value={formData.discount_percent}
                       onChange={(e) => setFormData({ ...formData, discount_percent: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2 rounded-lg border"
+                      className="w-full px-4 py-2 rounded-lg border outline-none"
                       style={{ borderColor: 'var(--border)' }}
                       placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Description
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border outline-none"
+                      style={{ borderColor: 'var(--border)' }}
+                      placeholder="Enter product description"
+                      rows={3}
                     />
                   </div>
 
@@ -649,7 +598,10 @@ const [formData, setFormData] = useState<ProductFormData>({
                     </button>
                   </div>
                 </>
-              ) : (
+              )}
+
+              {/* Slideshow Form */}
+              {tab === 'slideshow' && (
                 <>
                   <div>
                     <label className="block font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -659,7 +611,7 @@ const [formData, setFormData] = useState<ProductFormData>({
                       type="text"
                       value={slideFormData.title}
                       onChange={(e) => setSlideFormData({ ...slideFormData, title: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border"
+                      className="w-full px-4 py-2 rounded-lg border outline-none"
                       style={{ borderColor: 'var(--border)' }}
                       placeholder="Enter slide title"
                     />
@@ -672,7 +624,7 @@ const [formData, setFormData] = useState<ProductFormData>({
                     <textarea
                       value={slideFormData.description}
                       onChange={(e) => setSlideFormData({ ...slideFormData, description: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border"
+                      className="w-full px-4 py-2 rounded-lg border outline-none"
                       style={{ borderColor: 'var(--border)' }}
                       placeholder="Enter slide description"
                       rows={3}
@@ -687,7 +639,7 @@ const [formData, setFormData] = useState<ProductFormData>({
                       type="text"
                       value={slideFormData.media_url}
                       onChange={(e) => setSlideFormData({ ...slideFormData, media_url: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border"
+                      className="w-full px-4 py-2 rounded-lg border outline-none"
                       style={{ borderColor: 'var(--border)' }}
                       placeholder="https://example.com/image.jpg"
                     />
@@ -700,7 +652,7 @@ const [formData, setFormData] = useState<ProductFormData>({
                     <select
                       value={slideFormData.type}
                       onChange={(e) => setSlideFormData({ ...slideFormData, type: e.target.value as 'image' | 'video' })}
-                      className="w-full px-4 py-2 rounded-lg border"
+                      className="w-full px-4 py-2 rounded-lg border outline-none"
                       style={{ borderColor: 'var(--border)' }}
                     >
                       <option value="image">Image</option>
@@ -726,6 +678,7 @@ const [formData, setFormData] = useState<ProductFormData>({
                   </div>
                 </>
               )}
+
             </div>
           </div>
         </div>
@@ -734,7 +687,7 @@ const [formData, setFormData] = useState<ProductFormData>({
       {/* Footer */}
       <footer style={{ backgroundColor: '#1F2937', color: 'white' }} className="py-12 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-400">
-          <p>&copy; 2024 Wholesale Baazar. All rights reserved.</p>
+          <p>&copy; 2025 Wholesale Baazar. All rights reserved.</p>
         </div>
       </footer>
     </main>
