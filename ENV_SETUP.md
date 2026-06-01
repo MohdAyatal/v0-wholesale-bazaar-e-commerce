@@ -9,8 +9,8 @@ Create a `.env.local` file in the project root and add the following variables:
 ### 1. Supabase (Database & Auth)
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+NEXT_PUBLIC_SUPABASE_URL=https://tmlxudzfcszwxfhuiiph.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_yqUFLsnydBiz-JffJZo6ig_L4r7I78-
 SUPABASE_SERVICE_KEY=your_supabase_service_key_here
 ```
 
