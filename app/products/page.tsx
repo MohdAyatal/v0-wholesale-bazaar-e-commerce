@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 import Header from '@/components/header'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState, useMemo } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Star, ShoppingBag, Filter, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -11,7 +10,6 @@ import { Star, ShoppingBag, Filter, ChevronLeft, ChevronRight } from 'lucide-rea
 const ITEMS_PER_PAGE = 12
 
 export default function ProductsPage() {
-  const searchParams = useSearchParams()
   const [products, setProducts] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -20,10 +18,6 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [priceRange, setPriceRange] = useState([0, 20000])
   const [currentPage, setCurrentPage] = useState(1)
-  
- useEffect(() => {
-  setSelectedCategory(searchParams.get('category') || '')
-}, [searchParams])
 
 useEffect(() => {
   const fetchData = async () => {
