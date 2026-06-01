@@ -1,5 +1,5 @@
 'use client'
-
+export const dynamic = 'force-dynamic'
 import Header from '@/components/header'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState, useMemo } from 'react'
@@ -17,33 +17,41 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState('newest')
   const [showFilters, setShowFilters] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '')
+  const [selectedCategory, setSelectedCategory] = useState('')
   const [priceRange, setPriceRange] = useState([0, 20000])
   const [currentPage, setCurrentPage] = useState(1)
+  
+ useEffect(() => {
+  setSelectedCategory(searchParams.get('category') || '')
+}, [searchParams])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const supabase = createClient()
-      
-      // Fetch categories
-      const { data: cats } = await supabase.from('categories').select('*')
-      setCategories(cats || [])
-      
-      // Fetch products with proper pagination
-      let query = supabase.from('products').select('*', { count: 'exact' })
-      
-      if (selectedCategory) {
-        query = query.eq('category_id', selectedCategory)
-      }
-      
-      const { data: prods } = await query
-      setProducts(prods || [])
-      setCurrentPage(1)
-      setLoading(false)
+useEffect(() => {
+  const fetchData = async () => {
+    const supabase = createClient()
+
+    const { data: cats } = await supabase
+      .from('categories')
+      .select('*')
+
+    setCategories(cats || [])
+
+    let query = supabase
+      .from('products')
+      .select('*', { count: 'exact' })
+
+    if (selectedCategory) {
+      query = query.eq('category_id', selectedCategory)
     }
 
-    fetchData()
-  }, [selectedCategory])
+    const { data: prods } = await query
+
+    setProducts(prods || [])
+    setCurrentPage(1)
+    setLoading(false)
+  }
+
+  fetchData()
+}, [selectedCategory])
 
   const filtered = useMemo(() => {
     let result = products.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1])
@@ -220,7 +228,7 @@ export default function ProductsPage() {
                         <div className="flex items-center gap-2 mb-3">
                           <div className="flex">
                             {[...Array(5)].map((_, i) => (
-                              <Star key={i} size={14} className={i < Math.round(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} />
+                              <Star key={i} size={14} className={i < Math.round(product.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} />
                             ))}
                           </div>
                           <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>({product.review_count})</span>
