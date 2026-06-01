@@ -6,11 +6,10 @@ import { ShoppingBag, Search, Menu, X, LogIn, MessageCircle } from 'lucide-react
 import { useState } from 'react'
 
 const WHATSAPP_NUMBER = '8840130533'
-const { items } = useCart()
 export default function Header() {
+  const { items } = useCart()
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-
   const openWhatsApp = () => {
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=Hello, I would like to know more about your products.`, '_blank')
   }
