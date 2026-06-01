@@ -3,7 +3,8 @@
 import Header from '@/components/header'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, X, Image as ImageIcon, Play } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Image as ImageIcon, Play } from 'lucide-react' 
+import { useRouter } from 'next/navigation'
 
 interface Product {
   id: string
@@ -34,6 +35,15 @@ interface ProductFormData {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter()
+
+useEffect(() => {
+  const token = sessionStorage.getItem('wb_admin_token')
+
+  if (token !== 'wb_admin_2025_secure') {
+    router.push('/admin/login')
+  }
+}, [router])
   const [tab, setTab] = useState<'products' | 'slideshow' | 'orders'>('products')
   const [products, setProducts] = useState<Product[]>([])
   const [slides, setSlides] = useState<SlideItem[]>([])
