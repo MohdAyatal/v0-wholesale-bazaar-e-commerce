@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
-export default function AdminLoginPage() {
+export default function AdminLoginPage() { 
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
