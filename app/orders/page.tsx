@@ -1,320 +1,319 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Package, Search, Truck, CheckCircle, Clock, AlertCircle, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-
-interface OrderItem {
-  id: string;
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-}
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import Header from '@/components/header'
+import { createClient } from '@/lib/supabase/client'
+import { Package, ShoppingBag, Eye, Search } from 'lucide-react'
 
 interface Order {
-  id: string;
-  order_number: string;
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  final_amount: number;
-  payment_status: string;
-  tracking_number?: string;
-  created_at: string;
-  estimated_delivery_date?: string;
-  items?: OrderItem[];
-  user_email: string;
+  id: string
+  order_number: string
+  total_amount: number
+  status: string
+  payment_status: string
+  created_at: string
+  customer_email: string
 }
 
-const SAMPLE_ORDERS: Order[] = [
-  {
-    id: '1',
-    order_number: 'WB-001-2024',
-    status: 'delivered',
-    final_amount: 3149,
-    payment_status: 'completed',
-    tracking_number: 'TRK-2024-001',
-    created_at: '2024-05-26',
-    estimated_delivery_date: '2024-06-05',
-    user_email: 'customer1@example.com',
-    items: [
-      { id: '1', product_name: 'Stainless Steel Watch', quantity: 1, unit_price: 1999, total_price: 1999 },
-      { id: '2', product_name: 'Premium Cotton T-Shirt', quantity: 2, unit_price: 299, total_price: 598 },
-      { id: '3', product_name: 'Leather Belt', quantity: 1, unit_price: 399, total_price: 399 }
-    ]
-  },
-  {
-    id: '2',
-    order_number: 'WB-002-2024',
-    status: 'shipped',
-    final_amount: 6299,
-    payment_status: 'completed',
-    tracking_number: 'TRK-2024-002',
-    created_at: '2024-05-29',
-    estimated_delivery_date: '2024-06-08',
-    user_email: 'customer2@example.com',
-    items: [
-      { id: '4', product_name: 'Microwave Oven', quantity: 1, unit_price: 5999, total_price: 5999 }
-    ]
-  },
-  {
-    id: '3',
-    order_number: 'WB-003-2024',
-    status: 'processing',
-    final_amount: 1574,
-    payment_status: 'completed',
-    tracking_number: 'TRK-2024-003',
-    created_at: '2024-05-30',
-    estimated_delivery_date: '2024-06-09',
-    user_email: 'customer1@example.com',
-    items: [
-      { id: '5', product_name: 'Gold-Plated Necklace', quantity: 1, unit_price: 499, total_price: 499 },
-      { id: '6', product_name: 'Designer Sunglasses', quantity: 1, unit_price: 799, total_price: 799 }
-    ]
+const STATUS_STYLES: Record<string, { bg: string; color: string; icon: string }> = {
+  delivered:  { bg: '#D1FAE5', color: '#065F46', icon: '✅' },
+  shipped:    { bg: '#DBEAFE', color: '#1E40AF', icon: '🚚' },
+  processing: { bg: '#FEF3C7', color: '#92400E', icon: '⏳' },
+  pending:    { bg: '#F3F4F6', color: '#374151', icon: '🕐' },
+  cancelled:  { bg: '#FEE2E2', color: '#991B1B', icon: '❌' },
+}
+
+export default function MyOrdersPage() {
+  const [orders, setOrders]     = useState<Order[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [user, setUser]         = useState<any>(null)
+  const [search, setSearch]     = useState('')
+  const [filter, setFilter]     = useState('all')
+
+  useEffect(() => {
+    fetchOrders()
+  }, [])
+
+  const fetchOrders = async () => {
+    try {
+      const supabase = createClient()
+
+      // Get current logged-in user
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
+      // Fetch real orders for this user
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching orders:', error)
+      }
+
+      setOrders(data || [])
+      setLoading(false)
+    } catch (err) {
+      console.error('Error:', err)
+      setLoading(false)
+    }
   }
-];
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'delivered':
-      return <CheckCircle className="w-5 h-5 text-green-600" />;
-    case 'shipped':
-      return <Truck className="w-5 h-5 text-blue-600" />;
-    case 'processing':
-      return <Clock className="w-5 h-5 text-orange-600" />;
-    case 'pending':
-      return <Clock className="w-5 h-5 text-yellow-600" />;
-    case 'cancelled':
-      return <AlertCircle className="w-5 h-5 text-red-600" />;
-    default:
-      return <Package className="w-5 h-5 text-gray-600" />;
-  }
-};
+  const filtered = orders.filter(o => {
+    const matchSearch =
+      !search ||
+      o.order_number?.toLowerCase().includes(search.toLowerCase()) ||
+      o.customer_email?.toLowerCase().includes(search.toLowerCase())
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'delivered':
-      return 'bg-green-50 text-green-700 border-green-200';
-    case 'shipped':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 'processing':
-      return 'bg-orange-50 text-orange-700 border-orange-200';
-    case 'pending':
-      return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-    case 'cancelled':
-      return 'bg-red-50 text-red-700 border-red-200';
-    default:
-      return 'bg-gray-50 text-gray-700 border-gray-200';
-  }
-};
+    const matchFilter =
+      filter === 'all' || o.status?.toLowerCase() === filter
 
-export default function OrdersPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+    return matchSearch && matchFilter
+  })
 
-  const filteredOrders = SAMPLE_ORDERS.filter(order => {
-    const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.user_email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const getStatusStyle = (status: string) =>
+    STATUS_STYLES[status?.toLowerCase()] || STATUS_STYLES['pending']
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b" style={{ borderColor: 'var(--border)' }}>
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Package className="w-8 h-8" style={{ color: 'var(--primary)' }} />
-            <div>
-              <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>My Orders</h1>
-              <p style={{ color: 'var(--text-secondary)' }}>Track and manage your orders</p>
-            </div>
-          </div>
+    <main style={{ backgroundColor: 'var(--background)', minHeight: '100vh' }}>
+      <Header />
 
-          {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
-              <Input
-                type="text"
-                placeholder="Search by order number or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-                style={{
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--background-secondary)'
-                }}
-              />
-            </div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border rounded-lg"
-              style={{
-                borderColor: 'var(--border)',
-                backgroundColor: 'var(--background-secondary)',
-                color: 'var(--text-primary)'
-              }}
-            >
-              <option value="all">All Orders</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="processing">Processing</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        {/* Title */}
+        <div className="flex items-center gap-3 mb-8">
+          <Package size={32} style={{ color: 'var(--primary)' }} />
+          <div>
+            <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              My Orders
+            </h1>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Track and manage your orders
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Orders List */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {filteredOrders.length === 0 ? (
-          <div className="text-center py-12" style={{ color: 'var(--text-secondary)' }}>
-            <Package className="w-16 h-16 mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium">No orders found</p>
-            <p className="text-sm mt-2">Try adjusting your search or filters</p>
-            <Link href="/products">
-              <Button className="mt-6" style={{ backgroundColor: 'var(--primary)' }}>
-                Continue Shopping
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredOrders.map(order => (
-              <div
-                key={order.id}
-                className="border rounded-lg overflow-hidden"
-                style={{ borderColor: 'var(--border)' }}
+        {/* Not logged in */}
+        {!loading && !user && (
+          <div
+            className="rounded-2xl border p-12 text-center"
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+          >
+            <ShoppingBag size={56} className="mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
+            <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+              Please log in to view your orders
+            </h2>
+            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+              Sign in to your account to see your order history.
+            </p>
+            <Link href="/login">
+              <button
+                className="px-8 py-3 rounded-xl font-semibold text-white transition hover:opacity-90"
+                style={{ backgroundColor: 'var(--primary)' }}
               >
-                {/* Order Header */}
-                <button
-                  onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                  className="w-full p-4 hover:bg-gray-50 transition flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    {getStatusIcon(order.status)}
-                    <div className="text-left">
-                      <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        {order.order_number}
-                      </p>
-                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        Ordered on {new Date(order.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        ₹{order.final_amount.toLocaleString('en-IN')}
-                      </p>
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </span>
-                    </div>
-                    <Eye className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
-                  </div>
-                </button>
-
-                {/* Order Details - Expanded */}
-                {expandedOrder === order.id && (
-                  <div className="border-t p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background-secondary)' }}>
-                    <div className="grid md:grid-cols-2 gap-8">
-                      {/* Left Column - Items */}
-                      <div>
-                        <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Order Items</h3>
-                        <div className="space-y-3">
-                          {order.items?.map(item => (
-                            <div key={item.id} className="flex justify-between items-start pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
-                              <div>
-                                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                                  {item.product_name}
-                                </p>
-                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                  Qty: {item.quantity} × ₹{item.unit_price.toLocaleString('en-IN')}
-                                </p>
-                              </div>
-                              <p className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                                ₹{item.total_price.toLocaleString('en-IN')}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Right Column - Tracking & Info */}
-                      <div>
-                        <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Tracking Information</h3>
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Tracking Number</p>
-                            <p className="font-mono font-medium" style={{ color: 'var(--text-primary)' }}>
-                              {order.tracking_number || 'Not yet assigned'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Estimated Delivery</p>
-                            <p className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                              {order.estimated_delivery_date ? new Date(order.estimated_delivery_date).toLocaleDateString() : 'TBD'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Payment Status</p>
-                            <p className="font-medium capitalize" style={{ color: order.payment_status === 'completed' ? 'var(--primary)' : 'var(--text-primary)' }}>
-                              {order.payment_status}
-                            </p>
-                          </div>
-                          <button
-                            className="w-full mt-4 px-4 py-2 rounded-lg border transition"
-                            style={{
-                              borderColor: 'var(--primary)',
-                              color: 'var(--primary)',
-                              backgroundColor: 'transparent'
-                            }}
-                          >
-                            View Tracking Details
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                Sign In
+              </button>
+            </Link>
           </div>
         )}
-      </div>
 
-      {/* Help Section */}
-      <div className="max-w-6xl mx-auto px-4 py-8 mt-8">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-900 mb-2">Need Help?</h3>
-          <p className="text-blue-800 text-sm mb-4">
-            Can't find your order or need to track it? Contact our support team.
+        {/* Logged in */}
+        {user && (
+          <>
+            {/* Search + Filter */}
+            <div className="flex gap-3 mb-6 flex-col sm:flex-row">
+              <div className="relative flex-1">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2"
+                  style={{ color: 'var(--text-secondary)' }}
+                />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by order number or email..."
+                  className="w-full pl-9 pr-4 py-3 rounded-xl border text-sm outline-none"
+                  style={{
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--surface)',
+                    color: 'var(--text-primary)'
+                  }}
+                />
+              </div>
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="px-4 py-3 rounded-xl border text-sm outline-none"
+                style={{
+                  borderColor: 'var(--border)',
+                  backgroundColor: 'var(--surface)',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                <option value="all">All Orders</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            {/* Loading */}
+            {loading && (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl border p-5 animate-pulse"
+                    style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)', height: 80 }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Empty state — no orders at all */}
+            {!loading && orders.length === 0 && (
+              <div
+                className="rounded-2xl border p-16 text-center"
+                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+              >
+                <ShoppingBag size={56} className="mx-auto mb-4" style={{ color: 'var(--text-secondary)', opacity: 0.4 }} />
+                <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+                  No orders yet
+                </h2>
+                <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
+                  You haven&apos;t placed any orders yet. Start shopping!
+                </p>
+                <Link href="/products">
+                  <button
+                    className="px-8 py-3 rounded-xl font-semibold text-white transition hover:opacity-90"
+                    style={{ backgroundColor: 'var(--primary)' }}
+                  >
+                    Browse Products
+                  </button>
+                </Link>
+              </div>
+            )}
+
+            {/* No search results */}
+            {!loading && orders.length > 0 && filtered.length === 0 && (
+              <div
+                className="rounded-2xl border p-12 text-center"
+                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+              >
+                <Search size={40} className="mx-auto mb-4" style={{ color: 'var(--text-secondary)', opacity: 0.4 }} />
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  No orders match your search.
+                </p>
+              </div>
+            )}
+
+            {/* Orders list */}
+            {!loading && filtered.length > 0 && (
+              <div className="space-y-4">
+                {filtered.map((order) => {
+                  const s = getStatusStyle(order.status)
+                  return (
+                    <div
+                      key={order.id}
+                      className="rounded-2xl border p-5 flex items-center justify-between gap-4 hover:shadow-md transition"
+                      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+                    >
+                      {/* Left */}
+                      <div className="flex items-center gap-4">
+                        <span style={{ fontSize: 24 }}>{s.icon}</span>
+                        <div>
+                          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                            {order.order_number || `#${order.id.slice(0, 8).toUpperCase()}`}
+                          </p>
+                          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                            Ordered on {new Date(order.created_at).toLocaleDateString('en-IN', {
+                              day: 'numeric', month: 'short', year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right */}
+                      <div className="flex items-center gap-4">
+                        <p className="font-bold" style={{ color: 'var(--text-primary)' }}>
+                          ₹{order.total_amount?.toLocaleString('en-IN')}
+                        </p>
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-semibold capitalize"
+                          style={{ backgroundColor: s.bg, color: s.color }}
+                        >
+                          {order.status || 'Pending'}
+                        </span>
+                        <Link href={`/orders/${order.id}`}>
+                          <button
+                            className="p-2 rounded-lg transition hover:opacity-70"
+                            style={{ backgroundColor: 'var(--background)' }}
+                            title="View order"
+                          >
+                            <Eye size={18} style={{ color: 'var(--primary)' }} />
+                          </button>
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Summary */}
+            {!loading && orders.length > 0 && (
+              <p className="text-xs text-center mt-6" style={{ color: 'var(--text-secondary)' }}>
+                Showing {filtered.length} of {orders.length} order{orders.length !== 1 ? 's' : ''}
+              </p>
+            )}
+          </>
+        )}
+
+        {/* Help section */}
+        <div
+          className="mt-12 rounded-2xl p-6"
+          style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE' }}
+        >
+          <h3 className="font-bold mb-1" style={{ color: '#1E40AF' }}>Need Help?</h3>
+          <p className="text-sm mb-4" style={{ color: '#3B82F6' }}>
+            Can&apos;t find your order or need to track it? Contact our support team.
           </p>
-          <div className="flex gap-4">
+          <div className="flex gap-3 flex-wrap">
             <Link href="/contact">
-              <Button variant="outline" style={{ color: 'var(--primary)', borderColor: 'var(--primary)' }}>
+              <button
+                className="px-5 py-2 rounded-lg text-sm font-semibold border transition hover:opacity-80"
+                style={{ borderColor: '#3B82F6', color: '#1E40AF', backgroundColor: 'white' }}
+              >
                 Contact Support
-              </Button>
+              </button>
             </Link>
-            <button
-              onClick={() => window.open('https://wa.me/919876543210', '_blank')}
-              className="px-4 py-2 rounded-lg font-medium"
-              style={{ backgroundColor: '#25D366', color: 'white' }}
+            <a
+              href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}`}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              WhatsApp Support
-            </button>
+              <button
+                className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
+                style={{ backgroundColor: '#25D366' }}
+              >
+                WhatsApp Support
+              </button>
+            </a>
           </div>
         </div>
+
       </div>
     </main>
-  );
+  )
 }
