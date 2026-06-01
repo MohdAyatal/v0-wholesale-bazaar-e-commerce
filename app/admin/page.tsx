@@ -35,13 +35,34 @@ interface ProductFormData {
 }
 
 export default function AdminDashboard() {
-  const router = useRouter()
+  const router = useRouter() 
+  useEffect(() => {
+  const handleUnload = () => {
+    sessionStorage.removeItem('wb_admin_token')
+    sessionStorage.removeItem('wb_admin_expiry')
+  }
+
+  window.addEventListener('beforeunload', handleUnload)
+
+  return () => {
+    window.removeEventListener('beforeunload', handleUnload)
+  }
+}, [])
 
 useEffect(() => {
   const token = sessionStorage.getItem('wb_admin_token')
+  const expiry = sessionStorage.getItem('wb_admin_expiry')
 
-  if (token !== 'wb_admin_2025_secure') {
+  if (!token || !expiry) {
     router.push('/admin/login')
+    return
+  }
+
+  if (Date.now() > Number(expiry)) {
+    sessionStorage.removeItem('wb_admin_token')
+    sessionStorage.removeItem('wb_admin_expiry')
+    router.push('/admin/login')
+    return
   }
 }, [router])
   const [tab, setTab] = useState<'products' | 'slideshow' | 'orders'>('products')
@@ -693,6 +714,15 @@ useEffect(() => {
           </div>
         </div>
       )}
+      <button
+  onClick={() => {
+    sessionStorage.removeItem('wb_admin_token')
+    sessionStorage.removeItem('wb_admin_expiry')
+    router.push('/admin/login')
+  }}
+>
+  Logout
+</button>
 
       {/* Footer */}
       <footer style={{ backgroundColor: '#1F2937', color: 'white' }} className="py-12 mt-16">
