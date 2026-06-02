@@ -56,15 +56,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Check if item with same ID AND size exists
       const existing = prev.find(i => i.id === product.id && i.size === product.size)
       if (existing) {
-        // Already in cart — increase quantity
-        return prev.map(i =>
-          i.id === product.id && i.size === product.size 
-            ? { ...i, quantity: i.quantity + (product.quantity || 1) } 
-            : i
-        )
-      }
-      // New item
-      return [...prev, { ...product, quantity: product.quantity || 1 }]
+  return prev.map(i =>
+    i.id === product.id && i.size === product.size
+      ? { ...i, quantity: i.quantity + 1 }
+      : i
+  )
+}
+
+// New item
+return [...prev, { ...product, quantity: 1 }]
     })
   }
 
