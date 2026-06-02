@@ -299,4 +299,3 @@ export default function ContactPage() {
       </footer>
     </main>
   )
-}
