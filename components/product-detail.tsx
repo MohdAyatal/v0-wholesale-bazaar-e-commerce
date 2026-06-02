@@ -103,7 +103,6 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
       image_urls: product.image_urls || (product.image_url ? [product.image_url] : []),
       discount_percent: product.discount_percent,
       size: selectedSize,
-      quantity: quantity,
     })
 
     // Also save to Supabase for persistence
