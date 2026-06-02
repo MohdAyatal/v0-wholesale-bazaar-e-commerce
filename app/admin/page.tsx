@@ -95,36 +95,48 @@ useEffect(() => {
     fetchData()
   }, [])
 
-  const fetchData = async () => {
-    try {
-      const supabase = createClient()
+ const fetchData = async () => {
+  try {
+    setLoading(true)
 
-      const { data: cats } = await supabase.from('categories').select('*')
-      setCategories(cats || [])
+    const supabase = createClient()
 
-      const { data: prods, count } = await supabase.from('products').select('*', { count: 'exact' })
-      setProducts(prods || [])
+    const [
+      categoriesRes,
+      productsRes,
+      slidesRes,
+      ordersCountRes,
+      revenueRes
+    ] = await Promise.all([
+      supabase.from('categories').select('*'),
+      supabase.from('products').select('*', { count: 'exact' }),
+      supabase.from('slideshow').select('*').order('order', { ascending: true }),
+      supabase.from('orders').select('*', { count: 'exact', head: true }),
+      supabase.from('orders').select('total_amount')
+    ])
 
-      const { data: slidesData } = await supabase.from('slideshow').select('*').order('order', { ascending: true })
-      setSlides(slidesData || [])
+    setCategories(categoriesRes.data || [])
+    setProducts(productsRes.data || [])
+    setSlides(slidesRes.data || [])
 
-      const totalOrdersData = await supabase.from('orders').select('*', { count: 'exact' })
-      const totalRevenueData = await supabase.from('orders').select('total_amount')
+    const calculatedRevenue =
+      revenueRes.data?.reduce(
+        (sum: number, order: any) =>
+          sum + (order.total_amount || 0),
+        0
+      ) || 0
 
-      const calculatedRevenue = totalRevenueData.data?.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0) || 0
-
-      setStats({
-        totalProducts: count || 0,
-        totalOrders: totalOrdersData.count || 0,
-        totalRevenue: calculatedRevenue
-      })
-
-      setLoading(false)
-    } catch (error) {
-      console.error('Error fetching data:', error)
-      setLoading(false)
-    }
+    setStats({
+      totalProducts: productsRes.count || 0,
+      totalOrders: ordersCountRes.count || 0,
+      totalRevenue: calculatedRevenue
+    })
+  } catch (error) {
+    console.error('Error fetching data:', error)
+  } finally {
+    setLoading(false)
   }
+}
 
   const handleAddProduct = async () => {
     if (!formData.name || !formData.price || !formData.category_id) {
