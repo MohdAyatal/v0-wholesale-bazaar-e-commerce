@@ -186,7 +186,6 @@ export default function ProfilePage() {
                             borderColor: 'var(--border)', 
                             backgroundColor: 'var(--background)',
                             color: 'var(--text-primary)',
-                            ringColor: 'var(--primary)'
                           }}
                           required
                         />
@@ -225,8 +224,7 @@ export default function ProfilePage() {
                             borderColor: 'var(--border)', 
                             backgroundColor: 'var(--background)',
                             color: 'var(--text-primary)',
-                            ringColor: 'var(--primary)'
-                          }}
+                             }}
                         />
                       </div>
                     </div>
