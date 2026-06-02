@@ -10,13 +10,14 @@ export interface CartItem {
   image_urls?: string[]
   category_id?: string
   discount_percent?: number
+  size?: string  // <-- ADD THIS
 }
 
 interface CartContextType {
   items: CartItem[]
   addItem: (item: Omit<CartItem, 'quantity'>) => void
-  removeItem: (id: string) => void
-  updateQuantity: (id: string, quantity: number) => void
+  removeItem: (id: string, size?: string) => void  // <-- Update signature
+  updateQuantity: (id: string, quantity: number, size?: string) => void  // <-- Update signature
   clearCart: () => void
   totalItems: number
   totalPrice: number
@@ -52,29 +53,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = (product: Omit<CartItem, 'quantity'>) => {
     setItems(prev => {
-      const existing = prev.find(i => i.id === product.id)
+      // Check if item with same ID AND size exists
+      const existing = prev.find(i => i.id === product.id && i.size === product.size)
       if (existing) {
         // Already in cart — increase quantity
         return prev.map(i =>
-          i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === product.id && i.size === product.size 
+            ? { ...i, quantity: i.quantity + (product.quantity || 1) } 
+            : i
         )
       }
       // New item
-      return [...prev, { ...product, quantity: 1 }]
+      return [...prev, { ...product, quantity: product.quantity || 1 }]
     })
   }
 
-  const removeItem = (id: string) => {
-    setItems(prev => prev.filter(i => i.id !== id))
+  const removeItem = (id: string, size?: string) => {
+    setItems(prev => prev.filter(i => !(i.id === id && i.size === size)))
   }
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = (id: string, quantity: number, size?: string) => {
     if (quantity <= 0) {
-      removeItem(id)
+      removeItem(id, size)
       return
     }
     setItems(prev =>
-      prev.map(i => i.id === id ? { ...i, quantity } : i)
+      prev.map(i => (i.id === id && i.size === size) ? { ...i, quantity } : i)
     )
   }
 
