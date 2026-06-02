@@ -297,5 +297,6 @@ export default function ContactPage() {
           </div>
         </div>
       </footer>
-    </main> 
-  
+    </main>
+      )
+      }
