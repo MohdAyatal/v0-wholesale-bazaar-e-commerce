@@ -125,7 +125,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
         await supabase.from('cart_items').insert({
           user_id: user.id,
           product_id: product.id,
-          quantity: quantity,
+          
           size: selectedSize,
           price_at_time: product.price,
         })
@@ -156,7 +156,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
       image_urls: product.image_urls || (product.image_url ? [product.image_url] : []),
       discount_percent: product.discount_percent,
       size: selectedSize,
-      quantity: quantity,
+      
     })
 
     // Save to Supabase
@@ -185,7 +185,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
           .insert({
             user_id: user.id,
             product_id: product.id,
-            quantity: quantity,
+            
             size: selectedSize,
             price_at_time: product.price,
           })
