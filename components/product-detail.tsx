@@ -279,7 +279,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                   className={`relative w-20 h-20 rounded-lg border-2 overflow-hidden flex-shrink-0 ${activeImage === idx ? 'ring-2' : ''}`}
                   style={{ 
                     borderColor: activeImage === idx ? 'var(--primary)' : 'var(--border)',
-                    ringColor: 'var(--primary)'
+                    
                   }}
                 >
                   <Image src={img} alt="" fill className="object-cover" />
