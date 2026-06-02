@@ -263,21 +263,7 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', border: '1px solid' }}>
-              <h4 className="font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Integration Placeholders</h4>
-              <ul style={{ color: 'var(--text-secondary)' }} className="text-xs space-y-1">
-                <li><strong>Email Service:</strong> nodemailer / SendGrid integration</li>
-                <li><strong>Payment:</strong> Razorpay API for transactions</li>
-                <li><strong>Backend:</strong> Firebase Cloud Functions / Supabase Functions</li>
-                <li><strong>Database:</strong> Supabase PostgreSQL for orders</li>
-                <li><strong>Storage:</strong> Firebase Storage / Supabase Storage for documents</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
+             {/* Footer */}
       <footer style={{ backgroundColor: '#1F2937', color: 'white' }} className="py-12 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
