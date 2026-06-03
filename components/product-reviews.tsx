@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useAuth } from '@/components/auth-context'
+import { useAuth } from '@/lib/auth-context'
 import { Star, User, ThumbsUp, MessageSquare, Filter } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
