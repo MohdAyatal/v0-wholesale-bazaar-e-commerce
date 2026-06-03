@@ -6,7 +6,7 @@ import { Star, ShoppingCart, Heart, Share2, Zap, Truck, Shield, RefreshCw } from
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useCart } from '@/lib/cart-context'
-import { useAuth } from '@/components/auth-context'
+import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import ProductReviews from './product-reviews'
 
