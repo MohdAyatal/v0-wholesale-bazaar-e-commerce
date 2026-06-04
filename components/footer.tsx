@@ -37,7 +37,7 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Support</h3>
             <ul className="space-y-2">
-              {[['#','FAQ'],['#','Shipping Info'],['#','Return Policy'],['#','Privacy Policy']].map(([href, label]) => (
+      {[['/contact','FAQ'],['/about','Shipping Info'],['/about','Return Policy'],['/about','Privacy Policy']]}.map(([href, label]) => (
                 <li key={label}>
                   <Link href={href} className="text-gray-400 hover:text-white transition-colors text-sm">
                     {label}
