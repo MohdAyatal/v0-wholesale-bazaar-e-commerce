@@ -252,5 +252,3 @@ export default function ProfilePage() {
     </main>
   )
 }
-EOF
-echo "done"
