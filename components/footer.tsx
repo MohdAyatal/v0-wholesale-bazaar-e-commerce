@@ -54,7 +54,7 @@ export default function Footer() {
               <li className="flex items-center gap-2">
                 <Mail size={16} style={{ color: 'var(--primary-light, #14B8A6)' }} />
                 <a href="mailto:info@wholesalebaazar.in" className="text-gray-400 hover:text-white text-sm">
-                  info@wholesalebaazar.in
+                  Wholesalebazaar.support@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-2">
