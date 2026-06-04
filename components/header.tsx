@@ -114,9 +114,7 @@ export default function Header() {
             </Link>
 
             {/* Auth button — Login or Profile */}
-            {(
-              
-                {user ? (
+            {user ? (
                   /* ── Profile Dropdown ── */
                   <div className="relative" ref={dropdownRef}>
                     <button
