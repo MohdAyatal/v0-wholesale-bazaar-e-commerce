@@ -1,4 +1,3 @@
-cat > /mnt/user-data/outputs/profile-page.tsx << 'EOF'
 'use client'
 
 import { useState, useEffect } from 'react'
