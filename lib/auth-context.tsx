@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('id', userId)
         .single()
-      setProfile(data)
+      setProfile(data ?? null)
     } catch {
       setProfile(null)
     }
@@ -55,16 +55,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabase = createClient()
 
-    // Get initial session
+    // Timeout fallback — never hang forever
+    const timeout = setTimeout(() => setLoading(false), 5000)
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeout)
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
       setLoading(false)
+    }).catch(() => {
+      clearTimeout(timeout)
+      setLoading(false)
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         setUser(session?.user ?? null)
         if (session?.user) {
           await fetchProfile(session.user.id)
@@ -75,14 +80,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    setUser(null)
-    setProfile(null)
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.error('Sign out error:', e)
+    } finally {
+      // Always clear local state even if Supabase call fails
+      setUser(null)
+      setProfile(null)
+      // Hard redirect to home
+      window.location.href = '/'
+    }
   }
 
   return (
