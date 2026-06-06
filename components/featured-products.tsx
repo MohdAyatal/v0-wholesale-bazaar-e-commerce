@@ -38,8 +38,6 @@ export default function FeaturedProducts() {
         setProducts(data || [])
         setLoading(false)
       })
-      .catch(() => setLoading(false))
-
     // Timeout fallback
     const t = setTimeout(() => setLoading(false), 6000)
     return () => clearTimeout(t)
