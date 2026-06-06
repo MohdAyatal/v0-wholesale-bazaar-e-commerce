@@ -1,153 +1,184 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, ShoppingCart } from 'lucide-react'
+import { Star, ShoppingCart, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useCart } from '@/lib/cart-context'
+import { useRouter } from 'next/navigation'
 
 interface Product {
   id: string
   name: string
-  description: string
   price: number
-  image_url: string
-  rating: number
-  review_count: number
-  supplier_id: string
+  base_price?: number
+  image_url?: string
+  image_urls?: string[]
+  rating?: number
+  review_count?: number
+  discount_percent?: number
+  stock_quantity?: number
 }
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]   = useState(true)
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
+  const { addItem } = useCart()
+  const router = useRouter()
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('featured', true)
-          .limit(8)
-
-        if (error) throw error
+    const supabase = createClient()
+    supabase
+      .from('products')
+      .select('*')
+      .limit(8)
+      .then(({ data }) => {
         setProducts(data || [])
-      } catch (err) {
-        console.error('Error fetching products:', err)
-      } finally {
         setLoading(false)
-      }
-    }
+      })
+      .catch(() => setLoading(false))
 
-    fetchProducts()
+    // Timeout fallback
+    const t = setTimeout(() => setLoading(false), 6000)
+    return () => clearTimeout(t)
   }, [])
 
-  if (loading) {
-    return (
-      <section className="py-20 bg-background">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-4">Featured Products</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-80 bg-slate-800 rounded-lg animate-pulse" />
-            ))}
-          </div>
-        </div>
-      </section>
-    )
+  const getImage = (p: Product) =>
+    p.image_urls?.[0] || p.image_url || '/placeholder.jpg'
+
+  const handleAddToCart = (e: React.MouseEvent, p: Product) => {
+    e.preventDefault()
+    e.stopPropagation()
+    addItem({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      image_urls: p.image_urls || (p.image_url ? [p.image_url] : []),
+    })
+    setAddedIds(prev => new Set(prev).add(p.id))
+    setTimeout(() => setAddedIds(prev => {
+      const next = new Set(prev); next.delete(p.id); return next
+    }), 1500)
   }
 
-  return (
-    <section className="py-20 bg-background">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-4xl font-bold text-white mb-4">Featured Products</h2>
-          <p className="text-slate-400 text-lg">Handpicked wholesale offerings from our verified suppliers</p>
-        </motion.div>
+  const handleBuyNow = (e: React.MouseEvent, p: Product) => {
+    e.preventDefault()
+    e.stopPropagation()
+    addItem({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      image_urls: p.image_urls || (p.image_url ? [p.image_url] : []),
+    })
+    router.push('/cart')
+  }
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product, index) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ y: -10 }}
-              className="bg-slate-800 rounded-lg overflow-hidden group"
-            >
-              <Link href={`/products/${product.id}`}>
-                <div className="relative h-48 bg-slate-700 overflow-hidden">
-                  {product.image_url ? (
-                    <Image
-                      src={product.image_url}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
-                      <div className="text-slate-400 text-center text-sm">No Image</div>
-                    </div>
+  if (loading) return (
+    <section className="py-12 px-4 max-w-7xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>Best Deals</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="rounded-2xl animate-pulse" style={{ backgroundColor: 'var(--surface)', height: 300 }} />
+        ))}
+      </div>
+    </section>
+  )
+
+  if (!products.length) return null
+
+  return (
+    <section className="py-12 px-4 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Best Deals</h2>
+        <Link href="/products" className="text-sm font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
+          View all →
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {products.map(p => {
+          const img       = getImage(p)
+          const inCart    = addedIds.has(p.id)
+          const discount  = p.discount_percent || 0
+
+          return (
+            <Link key={p.id} href={`/products/${p.id}`}>
+              <div
+                className="rounded-2xl border overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer group"
+                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+              >
+                {/* Image */}
+                <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
+                  <Image
+                    src={img}
+                    alt={p.name}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.jpg' }}
+                  />
+                  {discount > 0 && (
+                    <span
+                      className="absolute top-2 left-2 text-xs font-bold text-white px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: 'var(--secondary)' }}
+                    >
+                      {discount}% OFF
+                    </span>
                   )}
                 </div>
 
-                <div className="p-4">
-                  <h3 className="font-semibold text-white mb-2 line-clamp-2 group-hover:text-blue-400 transition-colors">
-                    {product.name}
-                  </h3>
+                {/* Info */}
+                <div className="p-3">
+                  <p className="text-sm font-semibold mb-1 line-clamp-1" style={{ color: 'var(--text-primary)' }}>
+                    {p.name}
+                  </p>
 
-                  {/* Rating */}
-                  <div className="flex items-center gap-1 mb-3">
-                    <div className="flex gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          size={14}
-                          className={i < Math.floor(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-600'}
-                        />
-                      ))}
+                  {p.rating && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <Star size={11} className="fill-yellow-400 text-yellow-400" />
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {p.rating} ({p.review_count || 0})
+                      </span>
                     </div>
-                    <span className="text-xs text-slate-400">({product.review_count})</span>
+                  )}
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>
+                      ₹{p.price.toLocaleString('en-IN')}
+                    </span>
+                    {p.base_price && p.base_price > p.price && (
+                      <span className="text-xs line-through" style={{ color: 'var(--text-secondary)' }}>
+                        ₹{p.base_price.toLocaleString('en-IN')}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Price and Button */}
-                  <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-blue-400">
-                      ${product.price.toFixed(2)}
-                    </div>
-                    <button className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                      <ShoppingCart size={18} />
+                  {/* Buttons */}
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={(e) => handleAddToCart(e, p)}
+                      className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1 transition hover:opacity-90"
+                      style={{ backgroundColor: inCart ? '#059669' : 'var(--secondary)' }}
+                    >
+                      <ShoppingCart size={12} />
+                      {inCart ? '✓' : 'Cart'}
+                    </button>
+
+                    <button
+                      onClick={(e) => handleBuyNow(e, p)}
+                      className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1 transition hover:opacity-90"
+                      style={{ backgroundColor: 'var(--primary)' }}
+                    >
+                      <Zap size={12} />
+                      Buy Now
                     </button>
                   </div>
                 </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-center mt-12"
-        >
-          <Link
-            href="/products"
-            className="inline-block px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            View All Products
-          </Link>
-        </motion.div>
+              </div>
+            </Link>
+          )
+        })}
       </div>
     </section>
   )
