@@ -9,6 +9,7 @@ export interface CartItem {
   quantity: number
   image_urls?: string[]
   discount_percent?: number
+  size?: string
 }
 
 interface CartState {
