@@ -53,7 +53,7 @@ useEffect(() => {
   const token = sessionStorage.getItem('wb_admin_token')
   const expiry = sessionStorage.getItem('wb_admin_expiry')
 
-  if (!token || !expiry) {
+if (token !== 'wb_admin_2025_secure') {
     router.push('/admin/login')
     return
   }
