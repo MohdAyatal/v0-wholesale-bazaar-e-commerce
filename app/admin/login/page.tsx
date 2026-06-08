@@ -21,7 +21,7 @@ export default function AdminLoginPage() {
 
     if (password === ADMIN_PASSWORD) {
       sessionStorage.setItem('wb_admin_token', 'wb_admin_2025_secure')
-      router.push('/admin')
+      window.location.href = '/admin'
     } else {
       setError('Incorrect password.')
       setLoading(false)
