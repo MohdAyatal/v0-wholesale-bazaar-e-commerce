@@ -9,9 +9,10 @@ Create a `.env.local` file in the project root and add the following variables:
 ### 1. Supabase (Database & Auth)
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://tmlxudzfcszwxfhuiiph.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_yqUFLsnydBiz-JffJZo6ig_L4r7I78-
-SUPABASE_SERVICE_KEY=your_supabase_service_key_here
+NEXT_PUBLIC_SUPABASE_URL=https://lpjlgwvjspfujjcfatww.supabase.co/rest/v1/
+sb_publishable_uHtvDAPk6SSZSLRFYbjpRw_PPwO6X6Q
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxwamxnd3Zqc3BmdWpqY2ZhdHd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIwOTQsImV4cCI6MjA5NTMxODA5NH0.Zy0Fw2-cv86Xw_1-PvnST4G2Jnlg1BfAv9dFKfQGqTI
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxwamxnd3Zqc3BmdWpqY2ZhdHd3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTc0MjA5NCwiZXhwIjoyMDk1MzE4MDk0fQ.EUbQ04QobHxQg2HlFFEu73JGV8-TzzDdoGl3jHxPoDI
 ```
 
 **How to get these:**
