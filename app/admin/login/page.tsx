@@ -31,10 +31,9 @@ export default function AdminLoginPage() {
 
     if (password === ADMIN_PASSWORD) {
       // Use localStorage for persistence across tabs
-      localStorage.setItem('wb_admin_token', 'wb_admin_2025_secure')
+     localStorage.setItem('wb_admin_token', 'wb_admin_2025_secure')
       localStorage.setItem('wb_admin_expiry', String(Date.now() + 60 * 60 * 1000))
-      // Use router.push instead of window.location for proper Next.js navigation
-      router.push('/admin')
+      window.location.href = '/admin'
     } else {
       setError('Incorrect password.')
       setLoading(false)
