@@ -5,6 +5,7 @@ import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut } from 'luci
 import { useState, useRef, useEffect } from 'react'
 import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || ''
@@ -18,7 +19,7 @@ export default function Header() {
   const router = useRouter()
 
   const { items } = useCart()
-  const { user, signOut } = useAuth()
+  const { user, profile } = useAuth()
 
   const cartCount = items.reduce((s, i) => s + i.quantity, 0)
 
@@ -32,7 +33,6 @@ export default function Header() {
   }, [])
 
   const handleMouseEnter = () => {
-    // Clear any pending close
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current)
       closeTimeoutRef.current = null
@@ -41,36 +41,37 @@ export default function Header() {
   }
 
   const handleMouseLeave = () => {
-    // Delay closing by 500ms so user can move cursor to dropdown
     closeTimeoutRef.current = setTimeout(() => {
       setDropdownOpen(false)
     }, 500)
   }
 
-  const handleSignOut = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    console.log('Sign out clicked')
-    
+  const handleSignOut = async () => {
     try {
-      if (typeof signOut !== 'function') {
-        console.error('signOut is not a function:', signOut)
+      // Create supabase client
+      const supabase = createClient()
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('Supabase signout error:', error)
         return
       }
-      
-      await signOut()
-      console.log('Sign out successful')
+
+      // Clear any local storage items
+      localStorage.removeItem('wb_cart_v2')
+      localStorage.removeItem('sb-auth-token') // Supabase auth token
       
       // Close dropdown
       setDropdownOpen(false)
       
-      // Redirect
-      router.push('/')
-      router.refresh()
+      // Force reload to clear all state and become guest
+      window.location.href = '/'
+      
     } catch (error) {
       console.error('Sign out error:', error)
-      alert('Failed to sign out. Please try again.')
+      alert('Failed to sign out. Please refresh the page and try again.')
     }
   }
 
@@ -148,7 +149,6 @@ export default function Header() {
 
             {/* Auth button — Login or Profile */}
             {user ? (
-              /* ── Profile Dropdown (Hover with delay) ── */
               <div 
                 ref={dropdownRef}
                 onMouseEnter={handleMouseEnter}
@@ -160,7 +160,7 @@ export default function Header() {
                   style={{ backgroundColor: 'var(--surface)' }}
                 >
                   <img 
-                    src={user.user_metadata?.avatar_url || '/placeholder-user.jpg'} 
+                    src={user.user_metadata?.avatar_url || profile?.avatar_url || '/placeholder-user.jpg'} 
                     className="w-8 h-8 rounded-full object-cover" 
                     alt="avatar" 
                     onError={(e) => {
@@ -168,22 +168,20 @@ export default function Header() {
                     }}
                   />
                   <span className="text-sm font-medium hidden md:block" style={{ color: 'var(--text-primary)' }}>
-                    {user.user_metadata?.full_name?.split(' ')[0] || 'Account'}
+                    {user.user_metadata?.full_name?.split(' ')[0] || profile?.full_name?.split(' ')[0] || 'Account'}
                   </span>
                 </button>
 
-                {/* Dropdown menu - appears on hover, stays open 500ms after mouse leave */}
                 {dropdownOpen && (
                   <div
-                    className="absolute right-0 top-full mt-1 w-56 rounded-xl border shadow-lg py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute right-0 top-full mt-1 w-56 rounded-xl border shadow-lg py-2 z-50"
                     style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
                   >
-                    {/* User info */}
                     <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
                       <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                        {user.user_metadata?.full_name || 'My Account'}
+                        {user.user_metadata?.full_name || profile?.full_name || 'My Account'}
                       </p>
                       <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                         {user.email}
@@ -210,9 +208,8 @@ export default function Header() {
 
                     <div className="border-t mt-1" style={{ borderColor: 'var(--border)' }}>
                       <button
-                        type="button"
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:opacity-80 transition text-left cursor-pointer bg-transparent border-none"
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:opacity-80 transition text-left cursor-pointer border-none bg-transparent"
                       >
                         <LogOut size={16} style={{ color: '#DC2626' }} />
                         <span className="text-sm font-medium" style={{ color: '#DC2626' }}>Sign Out</span>
@@ -222,7 +219,6 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              /* ── Login Button ── */
               <Link
                 href="/login"
                 className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
@@ -258,11 +254,11 @@ export default function Header() {
               <>
                 <Link href="/profile" onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--primary)' }}>My Profile</Link>
                 <button 
-                  onClick={(e) => {
-                    handleSignOut(e as any)
+                  onClick={() => {
+                    handleSignOut()
                     setIsOpen(false)
                   }} 
-                  className="text-left font-medium" 
+                  className="text-left font-medium border-none bg-transparent" 
                   style={{ color: '#DC2626' }}
                 >
                   Sign Out
