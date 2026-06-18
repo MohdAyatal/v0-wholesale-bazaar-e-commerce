@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useReducer, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useReducer, useEffect, useState, ReactNode } from 'react'
 
 export interface CartItem {
   id: string
@@ -14,6 +14,7 @@ export interface CartItem {
 
 interface CartState {
   items: CartItem[]
+  isLoaded: boolean
 }
 
 type CartAction =
@@ -22,6 +23,9 @@ type CartAction =
   | { type: 'UPDATE_QTY'; payload: { id: string; quantity: number } }
   | { type: 'CLEAR_CART' }
   | { type: 'LOAD_CART'; payload: CartItem[] }
+  | { type: 'SET_LOADED' }
+
+const STORAGE_KEY = 'wb_cart_v2'
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
@@ -29,6 +33,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       const existing = state.items.find(i => i.id === action.payload.id)
       if (existing) {
         return {
+          ...state,
           items: state.items.map(i =>
             i.id === action.payload.id
               ? { ...i, quantity: i.quantity + 1 }
@@ -36,15 +41,19 @@ function cartReducer(state: CartState, action: CartAction): CartState {
           )
         }
       }
-      return { items: [...state.items, { ...action.payload, quantity: 1 }] }
+      return {
+        ...state,
+        items: [...state.items, { ...action.payload, quantity: 1 }]
+      }
     }
     case 'REMOVE_ITEM':
-      return { items: state.items.filter(i => i.id !== action.payload) }
+      return { ...state, items: state.items.filter(i => i.id !== action.payload) }
     case 'UPDATE_QTY':
       if (action.payload.quantity <= 0) {
-        return { items: state.items.filter(i => i.id !== action.payload.id) }
+        return { ...state, items: state.items.filter(i => i.id !== action.payload.id) }
       }
       return {
+        ...state,
         items: state.items.map(i =>
           i.id === action.payload.id
             ? { ...i, quantity: action.payload.quantity }
@@ -52,9 +61,11 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         )
       }
     case 'CLEAR_CART':
-      return { items: [] }
+      return { ...state, items: [] }
     case 'LOAD_CART':
-      return { items: action.payload }
+      return { ...state, items: action.payload, isLoaded: true }
+    case 'SET_LOADED':
+      return { ...state, isLoaded: true }
     default:
       return state
   }
@@ -66,42 +77,49 @@ interface CartContextType {
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
   clearCart: () => void
+  getItemQuantity: (id: string) => number
+  isInCart: (id: string) => boolean
   totalItems: number
   totalPrice: number
+  isLoaded: boolean
 }
 
-const CartContext = createContext<CartContextType>({
-  items: [],
-  addItem: () => {},
-  removeItem: () => {},
-  updateQuantity: () => {},
-  clearCart: () => {},
-  totalItems: 0,
-  totalPrice: 0,
-})
+const CartContext = createContext<CartContextType | null>(null)
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, { items: [] })
+  const [state, dispatch] = useReducer(cartReducer, { items: [], isLoaded: false })
+  const [mounted, setMounted] = useState(false)
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount only
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('wb_cart_v2')
+      const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
-        const items = JSON.parse(saved)
-        if (Array.isArray(items)) {
-          dispatch({ type: 'LOAD_CART', payload: items })
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          dispatch({ type: 'LOAD_CART', payload: parsed })
+        } else {
+          dispatch({ type: 'SET_LOADED' })
         }
+      } else {
+        dispatch({ type: 'SET_LOADED' })
       }
-    } catch {}
+    } catch (err) {
+      console.error('Failed to load cart:', err)
+      dispatch({ type: 'SET_LOADED' })
+    }
+    setMounted(true)
   }, [])
 
-  // Save to localStorage whenever cart changes
+  // Save to localStorage whenever cart changes (only after mount)
   useEffect(() => {
+    if (!mounted) return
     try {
-      localStorage.setItem('wb_cart_v2', JSON.stringify(state.items))
-    } catch {}
-  }, [state.items])
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items))
+    } catch (err) {
+      console.error('Failed to save cart:', err)
+    }
+  }, [state.items, mounted])
 
   const addItem = (item: Omit<CartItem, 'quantity'>) => {
     dispatch({ type: 'ADD_ITEM', payload: item })
@@ -117,7 +135,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     dispatch({ type: 'CLEAR_CART' })
-    try { localStorage.removeItem('wb_cart_v2') } catch {}
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch (err) {
+      console.error('Failed to clear cart:', err)
+    }
+  }
+
+  const getItemQuantity = (id: string) => {
+    return state.items.find(i => i.id === id)?.quantity || 0
+  }
+
+  const isInCart = (id: string) => {
+    return state.items.some(i => i.id === id)
   }
 
   const totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0)
@@ -130,8 +160,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem,
       updateQuantity,
       clearCart,
+      getItemQuantity,
+      isInCart,
       totalItems,
       totalPrice,
+      isLoaded: state.isLoaded && mounted,
     }}>
       {children}
     </CartContext.Provider>
@@ -139,5 +172,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCart() {
-  return useContext(CartContext)
+  const ctx = useContext(CartContext)
+  if (!ctx) {
+    throw new Error('useCart must be used within CartProvider')
+  }
+  return ctx
 }
