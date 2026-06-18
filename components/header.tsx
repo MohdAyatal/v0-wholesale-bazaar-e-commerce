@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut, ChevronDown } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
@@ -10,33 +10,17 @@ import { useRouter } from 'next/navigation'
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || ''
 
 export default function Header() {
-  const [isOpen, setIsOpen]         = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   const { items } = useCart()
-  const { user, profile, signOut, loading } = useAuth()
+  const { user, signOut } = useAuth()
 
-  const cartCount  = items.reduce((s, i) => s + i.quantity, 0)
-  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email || ''
-  const firstLetter = displayName.charAt(0).toUpperCase()
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
+  const cartCount = items.reduce((s, i) => s + i.quantity, 0)
 
   const handleSignOut = async () => {
     await signOut()
-    setDropdownOpen(false)
     router.push('/')
     router.refresh()
   }
@@ -58,9 +42,9 @@ export default function Header() {
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/products" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Products</Link>
-            <Link href="/orders"   className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>My Orders</Link>
-            <Link href="/about"    className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>About</Link>
-            <Link href="/contact"  className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Contact</Link>
+            <Link href="/orders" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>My Orders</Link>
+            <Link href="/about" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>About</Link>
+            <Link href="/contact" className="font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Contact</Link>
           </nav>
 
           {/* Right side */}
@@ -115,82 +99,49 @@ export default function Header() {
 
             {/* Auth button — Login or Profile */}
             {user ? (
-                  /* ── Profile Dropdown ── */
-                  <div className="relative" ref={dropdownRef}>
-                    <button
-                      onClick={() => setDropdownOpen(o => !o)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg transition hover:opacity-80"
-                      style={{ backgroundColor: 'var(--surface)' }}
-                    >
-                      {/* Avatar circle with first letter */}
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                        style={{ backgroundColor: 'var(--primary)' }}
-                      >
-                        {firstLetter || '?'}
-                      </div>
-                      <span
-                        className="hidden sm:block text-sm font-semibold max-w-[100px] truncate"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {displayName.split(' ')[0]}
-                      </span>
-                      <ChevronDown size={14} style={{ color: 'var(--text-secondary)' }} />
-                    </button>
-
-                    {/* Dropdown menu */}
-                    {dropdownOpen && (
-                      <div
-                        className="absolute right-0 top-12 w-52 rounded-xl border shadow-lg py-1 z-50"
-                        style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-                      >
-                        {/* User info at top */}
-                        <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
-                          <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                            {displayName || 'My Account'}
-                          </p>
-                          <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                            {user.email}
-                          </p>
-                        </div>
-
-                        <Link href="/profile" onClick={() => setDropdownOpen(false)}>
-                          <div className="flex items-center gap-3 px-4 py-3 hover:opacity-80 transition cursor-pointer">
-                            <User size={16} style={{ color: 'var(--primary)' }} />
-                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>My Profile</span>
-                          </div>
-                        </Link>
-
-                        <Link href="/orders" onClick={() => setDropdownOpen(false)}>
-                          <div className="flex items-center gap-3 px-4 py-3 hover:opacity-80 transition cursor-pointer">
-                            <Package size={16} style={{ color: 'var(--primary)' }} />
-                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>My Orders</span>
-                          </div>
-                        </Link>
-
-                        <div className="border-t mt-1" style={{ borderColor: 'var(--border)' }}>
-                          <button
-                            onClick={handleSignOut}
-                            className="w-full flex items-center gap-3 px-4 py-3 hover:opacity-80 transition text-left"
-                          >
-                            <LogOut size={16} style={{ color: 'var(--error)' }} />
-                            <span className="text-sm font-medium" style={{ color: 'var(--error)' }}>Sign Out</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
+              /* ── Profile Dropdown (Hover) ── */
+              <div className="relative group">
+                {/* avatar button */}
+                <button className="flex items-center gap-2">
+                  <img 
+                    src={user.user_metadata?.avatar_url || '/placeholder-user.jpg'} 
+                    className="w-8 h-8 rounded-full object-cover" 
+                    alt="avatar" 
+                  />
+                  <span className="text-sm font-medium hidden md:block" style={{ color: 'var(--text-primary)' }}>
+                    {user.user_metadata?.full_name?.split(' ')[0] || 'Account'}
+                  </span>
+                </button>
+                {/* dropdown */}
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border shadow-lg z-50 hidden group-hover:block"
+                     style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <div className="px-4 py-3 border-b text-xs" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+                    {user.email}
                   </div>
-                ) : (
-                  /* ── Login Button ── */
-                  <Link
-                    href="/login"
-                    className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
-                    style={{ backgroundColor: 'var(--accent)', color: 'var(--text-primary)' }}
+                  <a href="/orders" className="block px-4 py-2.5 text-sm hover:opacity-70 transition"
+                     style={{ color: 'var(--text-primary)' }}>🛒 My Orders</a>
+                  <a href="/profile" className="block px-4 py-2.5 text-sm hover:opacity-70 transition"
+                     style={{ color: 'var(--text-primary)' }}>👤 Profile</a>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left px-4 py-2.5 text-sm rounded-b-xl hover:opacity-70 transition"
+                    style={{ color: '#DC2626' }}
                   >
-                    <LogIn size={18} />
-                    Login
-                  </Link>
-                )}
+                    🚪 Sign Out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ── Login Button ── */
+              <Link
+                href="/login"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition hover:opacity-80"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--text-primary)' }}
+              >
+                <LogIn size={18} />
+                Login
+              </Link>
+            )}
 
             {/* Mobile menu toggle */}
             <button
@@ -210,13 +161,13 @@ export default function Header() {
             style={{ borderColor: 'var(--border)' }}
           >
             <Link href="/products" onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--text-secondary)' }}>Products</Link>
-            <Link href="/orders"   onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--text-secondary)' }}>My Orders</Link>
-            <Link href="/about"    onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--text-secondary)' }}>About</Link>
-            <Link href="/contact"  onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--text-secondary)' }}>Contact</Link>
+            <Link href="/orders" onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--text-secondary)' }}>My Orders</Link>
+            <Link href="/about" onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--text-secondary)' }}>About</Link>
+            <Link href="/contact" onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--text-secondary)' }}>Contact</Link>
             {user ? (
               <>
                 <Link href="/profile" onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--primary)' }}>My Profile</Link>
-                <button onClick={handleSignOut} className="text-left font-medium" style={{ color: 'var(--error)' }}>Sign Out</button>
+                <button onClick={handleSignOut} className="text-left font-medium" style={{ color: '#DC2626' }}>Sign Out</button>
               </>
             ) : (
               <Link href="/login" onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--primary)' }}>Login</Link>
