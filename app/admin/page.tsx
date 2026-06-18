@@ -55,7 +55,7 @@ export default function AdminDashboard() {
   }
 }, [router])
 
-  // Cleanup on unload
+ // Cleanup on unload
   useEffect(() => {
     const handleUnload = () => {
       localStorage.removeItem('wb_admin_token')
