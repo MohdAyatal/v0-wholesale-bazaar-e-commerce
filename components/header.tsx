@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut, ChevronDown } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
@@ -12,6 +12,8 @@ const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || ''
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   const { items } = useCart()
@@ -19,10 +21,26 @@ export default function Header() {
 
   const cartCount = items.reduce((s, i) => s + i.quantity, 0)
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const handleSignOut = async () => {
-    await signOut()
-    router.push('/')
-    router.refresh()
+    try {
+      await signOut()
+      setDropdownOpen(false)
+      router.push('/')
+      router.refresh()
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
   }
 
   return (
@@ -99,10 +117,13 @@ export default function Header() {
 
             {/* Auth button — Login or Profile */}
             {user ? (
-              /* ── Profile Dropdown (Hover) ── */
-              <div className="relative group">
-                {/* avatar button */}
-                <button className="flex items-center gap-2">
+              /* ── Profile Dropdown (Click to toggle) ── */
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 px-2 py-1 rounded-lg transition hover:opacity-80"
+                  style={{ backgroundColor: 'var(--surface)' }}
+                >
                   <img 
                     src={user.user_metadata?.avatar_url || '/placeholder-user.jpg'} 
                     className="w-8 h-8 rounded-full object-cover" 
@@ -111,25 +132,58 @@ export default function Header() {
                   <span className="text-sm font-medium hidden md:block" style={{ color: 'var(--text-primary)' }}>
                     {user.user_metadata?.full_name?.split(' ')[0] || 'Account'}
                   </span>
+                  <ChevronDown 
+                    size={14} 
+                    style={{ color: 'var(--text-secondary)' }}
+                    className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                  />
                 </button>
-                {/* dropdown */}
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border shadow-lg z-50 hidden group-hover:block"
-                     style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                  <div className="px-4 py-3 border-b text-xs" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
-                    {user.email}
-                  </div>
-                  <a href="/orders" className="block px-4 py-2.5 text-sm hover:opacity-70 transition"
-                     style={{ color: 'var(--text-primary)' }}>🛒 My Orders</a>
-                  <a href="/profile" className="block px-4 py-2.5 text-sm hover:opacity-70 transition"
-                     style={{ color: 'var(--text-primary)' }}>👤 Profile</a>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full text-left px-4 py-2.5 text-sm rounded-b-xl hover:opacity-70 transition"
-                    style={{ color: '#DC2626' }}
+
+                {/* Dropdown menu */}
+                {dropdownOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-2 w-56 rounded-xl border shadow-lg py-2 z-50"
+                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
                   >
-                    🚪 Sign Out
-                  </button>
-                </div>
+                    {/* User info */}
+                    <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
+                      <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                        {user.user_metadata?.full_name || 'My Account'}
+                      </p>
+                      <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                        {user.email}
+                      </p>
+                    </div>
+
+                    <Link 
+                      href="/orders" 
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 hover:opacity-80 transition"
+                    >
+                      <Package size={16} style={{ color: 'var(--primary)' }} />
+                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>My Orders</span>
+                    </Link>
+
+                    <Link 
+                      href="/profile" 
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 hover:opacity-80 transition"
+                    >
+                      <User size={16} style={{ color: 'var(--primary)' }} />
+                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Profile</span>
+                    </Link>
+
+                    <div className="border-t mt-1" style={{ borderColor: 'var(--border)' }}>
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:opacity-80 transition text-left"
+                      >
+                        <LogOut size={16} style={{ color: '#DC2626' }} />
+                        <span className="text-sm font-medium" style={{ color: '#DC2626' }}>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               /* ── Login Button ── */
