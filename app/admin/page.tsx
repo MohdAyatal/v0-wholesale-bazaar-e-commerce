@@ -55,16 +55,6 @@ export default function AdminDashboard() {
   }
 }, [router])
 
- // Cleanup on unload
-  useEffect(() => {
-    const handleUnload = () => {
-      localStorage.removeItem('wb_admin_token')
-      localStorage.removeItem('wb_admin_expiry')
-    }
-    window.addEventListener('beforeunload', handleUnload)
-    return () => window.removeEventListener('beforeunload', handleUnload)
-  }, [])
-
   const [tab, setTab] = useState<'products' | 'slideshow' | 'orders'>('products')
   const [products, setProducts] = useState<Product[]>([])
   const [slides, setSlides] = useState<SlideItem[]>([])
