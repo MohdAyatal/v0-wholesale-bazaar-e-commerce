@@ -38,22 +38,22 @@ export default function AdminDashboard() {
   const router = useRouter()
   
   // Auth check - use localStorage instead of sessionStorage
-  useEffect(() => {
-    const token = localStorage.getItem('wb_admin_token')
-    const expiry = localStorage.getItem('wb_admin_expiry')
+ useEffect(() => {
+  const token = localStorage.getItem('wb_admin_token')
+  const expiry = localStorage.getItem('wb_admin_expiry')
 
-    if (token !== 'wb_admin_2025_secure') {
-      router.push('/admin/login')
-      return
-    }
+  if (token !== 'wb_admin_2025_secure') {
+    router.push('/admin/login')
+    return
+  }
 
-    if (expiry && Date.now() > Number(expiry)) {
-      localStorage.removeItem('wb_admin_token')
-      localStorage.removeItem('wb_admin_expiry')
-      router.push('/admin/login')
-      return
-    }
-  }, [router])
+  // Only check expiry if it exists
+  if (expiry && Date.now() > parseInt(expiry)) {
+    localStorage.removeItem('wb_admin_token')
+    localStorage.removeItem('wb_admin_expiry')
+    router.push('/admin/login')
+  }
+}, [router])
 
   // Cleanup on unload
   useEffect(() => {
