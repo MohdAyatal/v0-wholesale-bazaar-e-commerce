@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut, ChevronDown } from 'lucide-react'
+import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
@@ -14,6 +14,7 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
 
   const { items } = useCart()
@@ -21,25 +22,55 @@ export default function Header() {
 
   const cartCount = items.reduce((s, i) => s + i.quantity, 0)
 
-  // Close dropdown when clicking outside
+  // Clear timeout on unmount
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSignOut = async () => {
-    try {
-      await signOut()
+  const handleMouseEnter = () => {
+    // Clear any pending close
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
+    }
+    setDropdownOpen(true)
+  }
+
+  const handleMouseLeave = () => {
+    // Delay closing by 500ms so user can move cursor to dropdown
+    closeTimeoutRef.current = setTimeout(() => {
       setDropdownOpen(false)
+    }, 500)
+  }
+
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    console.log('Sign out clicked')
+    
+    try {
+      if (typeof signOut !== 'function') {
+        console.error('signOut is not a function:', signOut)
+        return
+      }
+      
+      await signOut()
+      console.log('Sign out successful')
+      
+      // Close dropdown
+      setDropdownOpen(false)
+      
+      // Redirect
       router.push('/')
       router.refresh()
     } catch (error) {
       console.error('Sign out error:', error)
+      alert('Failed to sign out. Please try again.')
     }
   }
 
@@ -117,33 +148,37 @@ export default function Header() {
 
             {/* Auth button — Login or Profile */}
             {user ? (
-              /* ── Profile Dropdown (Click to toggle) ── */
-              <div className="relative" ref={dropdownRef}>
+              /* ── Profile Dropdown (Hover with delay) ── */
+              <div 
+                ref={dropdownRef}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                className="relative py-2"
+              >
                 <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 px-2 py-1 rounded-lg transition hover:opacity-80"
+                  className="flex items-center gap-2 px-2 py-1 rounded-lg transition hover:opacity-80 cursor-pointer"
                   style={{ backgroundColor: 'var(--surface)' }}
                 >
                   <img 
                     src={user.user_metadata?.avatar_url || '/placeholder-user.jpg'} 
                     className="w-8 h-8 rounded-full object-cover" 
                     alt="avatar" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-user.jpg'
+                    }}
                   />
                   <span className="text-sm font-medium hidden md:block" style={{ color: 'var(--text-primary)' }}>
                     {user.user_metadata?.full_name?.split(' ')[0] || 'Account'}
                   </span>
-                  <ChevronDown 
-                    size={14} 
-                    style={{ color: 'var(--text-secondary)' }}
-                    className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
-                  />
                 </button>
 
-                {/* Dropdown menu */}
+                {/* Dropdown menu - appears on hover, stays open 500ms after mouse leave */}
                 {dropdownOpen && (
                   <div
-                    className="absolute right-0 top-full mt-2 w-56 rounded-xl border shadow-lg py-2 z-50"
+                    className="absolute right-0 top-full mt-1 w-56 rounded-xl border shadow-lg py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
                     style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
                   >
                     {/* User info */}
                     <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
@@ -157,8 +192,8 @@ export default function Header() {
 
                     <Link 
                       href="/orders" 
-                      onClick={() => setDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 hover:opacity-80 transition"
+                      onClick={() => setDropdownOpen(false)}
                     >
                       <Package size={16} style={{ color: 'var(--primary)' }} />
                       <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>My Orders</span>
@@ -166,8 +201,8 @@ export default function Header() {
 
                     <Link 
                       href="/profile" 
-                      onClick={() => setDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 hover:opacity-80 transition"
+                      onClick={() => setDropdownOpen(false)}
                     >
                       <User size={16} style={{ color: 'var(--primary)' }} />
                       <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Profile</span>
@@ -175,8 +210,9 @@ export default function Header() {
 
                     <div className="border-t mt-1" style={{ borderColor: 'var(--border)' }}>
                       <button
+                        type="button"
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:opacity-80 transition text-left"
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:opacity-80 transition text-left cursor-pointer bg-transparent border-none"
                       >
                         <LogOut size={16} style={{ color: '#DC2626' }} />
                         <span className="text-sm font-medium" style={{ color: '#DC2626' }}>Sign Out</span>
@@ -221,7 +257,16 @@ export default function Header() {
             {user ? (
               <>
                 <Link href="/profile" onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--primary)' }}>My Profile</Link>
-                <button onClick={handleSignOut} className="text-left font-medium" style={{ color: '#DC2626' }}>Sign Out</button>
+                <button 
+                  onClick={(e) => {
+                    handleSignOut(e as any)
+                    setIsOpen(false)
+                  }} 
+                  className="text-left font-medium" 
+                  style={{ color: '#DC2626' }}
+                >
+                  Sign Out
+                </button>
               </>
             ) : (
               <Link href="/login" onClick={() => setIsOpen(false)} className="font-medium" style={{ color: 'var(--primary)' }}>Login</Link>
