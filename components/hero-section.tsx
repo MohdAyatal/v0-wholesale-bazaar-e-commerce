@@ -54,15 +54,15 @@ export default function HeroSection() {
           transition={{ duration: 0.8 }}
           className="mb-8"
         >
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            Premium Wholesale
+         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+            Wholesale Baazar
             <span className="block bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              Marketplace
+              Fashion Marketplace
             </span>
           </h1>
 
           <p className="text-xl sm:text-2xl text-slate-300 mb-8 max-w-2xl mx-auto">
-            Connect with verified suppliers and source high-quality products at competitive wholesale prices. Grow your business with FairPath.
+            India's trusted manufacturer & wholesale supplier of premium fashion for Men, Women & Kids. Direct factory prices, COD available.
           </p>
         </motion.div>
 
