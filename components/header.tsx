@@ -5,7 +5,6 @@ import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut } from 'luci
 import { useState, useRef, useEffect } from 'react'
 import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || ''
@@ -19,7 +18,7 @@ export default function Header() {
   const router = useRouter()
 
   const { items } = useCart()
-  const { user, profile } = useAuth()
+const { user, profile, signOut } = useAuth()
 
   const cartCount = items.reduce((s, i) => s + i.quantity, 0)
 
@@ -46,33 +45,9 @@ export default function Header() {
     }, 500)
   }
 
-  const handleSignOut = async () => {
-    try {
-      // Create supabase client
-      const supabase = createClient()
-      
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut()
-      
-      if (error) {
-        console.error('Supabase signout error:', error)
-        return
-      }
-
-      // Clear any local storage items
-      localStorage.removeItem('wb_cart_v2')
-      localStorage.removeItem('sb-auth-token') // Supabase auth token
-      
-      // Close dropdown
-      setDropdownOpen(false)
-      
-      // Force reload to clear all state and become guest
-      window.location.href = '/'
-      
-    } catch (error) {
-      console.error('Sign out error:', error)
-      alert('Failed to sign out. Please refresh the page and try again.')
-    }
+const handleSignOut = async () => {
+    setDropdownOpen(false)
+    await signOut()
   }
 
   return (
