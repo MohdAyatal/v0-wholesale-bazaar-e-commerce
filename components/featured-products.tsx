@@ -23,15 +23,15 @@ interface Product {
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [loading, setLoading] = useState(true)
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
   const { addItem } = useCart()
   const router = useRouter()
 
- useEffect(() => {
-    const supabase = createClient()
+  useEffect(() => {
     const load = async () => {
       try {
+        const supabase = createClient()
         const { data, error } = await supabase
           .from('products')
           .select('id,name,price,base_price,image_url,image_urls,discount_percent,rating,review_count,stock_quantity')
@@ -40,15 +40,12 @@ export default function FeaturedProducts() {
         setProducts(data || [])
       } catch (e) {
         console.error('Products error:', e)
+        setProducts([])
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [])
-    // Timeout fallback
-    const t = setTimeout(() => setLoading(false), 6000)
-    return () => clearTimeout(t)
   }, [])
 
   const getImage = (p: Product) =>
@@ -92,7 +89,12 @@ export default function FeaturedProducts() {
     </section>
   )
 
-  if (!products.length) return null
+  if (!products.length) return (
+    <section className="py-12 px-4 max-w-7xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>Best Deals</h2>
+      <p style={{ color: 'var(--text-secondary)' }}>No products available yet.</p>
+    </section>
+  )
 
   return (
     <section className="py-12 px-4 max-w-7xl mx-auto">
@@ -105,9 +107,9 @@ export default function FeaturedProducts() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {products.map(p => {
-          const img       = getImage(p)
-          const inCart    = addedIds.has(p.id)
-          const discount  = p.discount_percent || 0
+          const img = getImage(p)
+          const inCart = addedIds.has(p.id)
+          const discount = p.discount_percent || 0
 
           return (
             <Link key={p.id} href={`/products/${p.id}`}>
@@ -115,7 +117,6 @@ export default function FeaturedProducts() {
                 className="rounded-2xl border overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer group"
                 style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
               >
-                {/* Image */}
                 <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
                   <Image
                     src={img}
@@ -125,42 +126,25 @@ export default function FeaturedProducts() {
                     onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.jpg' }}
                   />
                   {discount > 0 && (
-                    <span
-                      className="absolute top-2 left-2 text-xs font-bold text-white px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: 'var(--secondary)' }}
-                    >
+                    <span className="absolute top-2 left-2 text-xs font-bold text-white px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--secondary)' }}>
                       {discount}% OFF
                     </span>
                   )}
                 </div>
-
-                {/* Info */}
                 <div className="p-3">
-                  <p className="text-sm font-semibold mb-1 line-clamp-1" style={{ color: 'var(--text-primary)' }}>
-                    {p.name}
-                  </p>
-
+                  <p className="text-sm font-semibold mb-1 line-clamp-1" style={{ color: 'var(--text-primary)' }}>{p.name}</p>
                   {p.rating && (
                     <div className="flex items-center gap-1 mb-2">
                       <Star size={11} className="fill-yellow-400 text-yellow-400" />
-                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                        {p.rating} ({p.review_count || 0})
-                      </span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{p.rating} ({p.review_count || 0})</span>
                     </div>
                   )}
-
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>
-                      ₹{p.price.toLocaleString('en-IN')}
-                    </span>
+                    <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>₹{p.price.toLocaleString('en-IN')}</span>
                     {p.base_price && p.base_price > p.price && (
-                      <span className="text-xs line-through" style={{ color: 'var(--text-secondary)' }}>
-                        ₹{p.base_price.toLocaleString('en-IN')}
-                      </span>
+                      <span className="text-xs line-through" style={{ color: 'var(--text-secondary)' }}>₹{p.base_price.toLocaleString('en-IN')}</span>
                     )}
                   </div>
-
-                  {/* Buttons */}
                   <div className="flex gap-1.5">
                     <button
                       onClick={(e) => handleAddToCart(e, p)}
@@ -170,7 +154,6 @@ export default function FeaturedProducts() {
                       <ShoppingCart size={12} />
                       {inCart ? '✓' : 'Cart'}
                     </button>
-
                     <button
                       onClick={(e) => handleBuyNow(e, p)}
                       className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1 transition hover:opacity-90"
