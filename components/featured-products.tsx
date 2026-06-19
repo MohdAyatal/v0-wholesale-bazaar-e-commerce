@@ -28,16 +28,24 @@ export default function FeaturedProducts() {
   const { addItem } = useCart()
   const router = useRouter()
 
-  useEffect(() => {
+ useEffect(() => {
     const supabase = createClient()
-    supabase
-      .from('products')
-      .select('*')
-      .limit(8)
-      .then(({ data }) => {
+    const load = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('id,name,price,base_price,image_url,image_urls,discount_percent,rating,review_count,stock_quantity')
+          .limit(8)
+        if (error) throw error
         setProducts(data || [])
+      } catch (e) {
+        console.error('Products error:', e)
+      } finally {
         setLoading(false)
-      })
+      }
+    }
+    load()
+  }, [])
     // Timeout fallback
     const t = setTimeout(() => setLoading(false), 6000)
     return () => clearTimeout(t)
