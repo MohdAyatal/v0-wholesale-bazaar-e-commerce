@@ -86,18 +86,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signOut = async () => {
+const signOut = async () => {
     try {
       const supabase = createClient()
       await supabase.auth.signOut()
     } catch (e) {
       console.error('Sign out error:', e)
     } finally {
-      // Always clear local state even if Supabase call fails
       setUser(null)
       setProfile(null)
-      // Hard redirect to home
-      window.location.href = '/'
+      window.location.href = '/login'
     }
   }
 
