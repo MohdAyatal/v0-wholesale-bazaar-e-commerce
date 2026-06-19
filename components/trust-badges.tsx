@@ -1,6 +1,6 @@
 'use client'
 
-import { Shield, Truck, RotateCcw, HeadphonesIcon } from 'lucide-react'
+import { Shield, Truck, HeadphonesIcon, Tag } from 'lucide-react'
 
 export default function TrustBadges() {
   const badges = [
@@ -9,22 +9,22 @@ export default function TrustBadges() {
       title: '100% Authentic',
       description: 'All products verified'
     },
-    {
+   {
       icon: Truck,
-      title: 'Fast Shipping',
-      description: 'Pan-India delivery'
+      title: 'Free Shipping ₹999+',
+      description: 'Fast Pan-India delivery in 3–5 days'
     },
     {
-      icon: RotateCcw,
-      title: '30-Day Returns',
-      description: 'Easy returns policy'
+      icon: Tag,
+      title: 'Lowest Wholesale Prices',
+      description: 'Direct from manufacturer, no middlemen'
     },
     {
       icon: HeadphonesIcon,
-      title: '24/7 Support',
-      description: 'Dedicated customer care'
+      title: 'WhatsApp Support',
+      description: 'Mon–Sat 9AM–8PM instant help'
     }
-  ]
+    ]
 
   return (
     <section className="py-12 border-y" style={{ borderColor: 'var(--border)' }}>
