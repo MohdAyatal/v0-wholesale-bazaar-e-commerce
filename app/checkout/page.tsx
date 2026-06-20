@@ -9,10 +9,11 @@ import { ShoppingBag, Lock, CreditCard, Truck } from 'lucide-react'
 import Link from 'next/link'
 
 declare global {
-  interface Window {
-    Razorpay: any
-  }
+  interface Window { Razorpay: any }
 }
+
+const RAZORPAY_KEY = process.env.NEXT_PUBLIC_RAZORPAY_KEY || 'rzp_test_PLACEHOLDER'
+const COD_MINIMUM = 799
 
 export default function CheckoutPage() {
   const { items, clearCart, totalPrice } = useCart()
@@ -25,13 +26,14 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('')
   const [city,    setCity]    = useState('')
   const [pin,     setPin]     = useState('')
-  const [payment, setPayment] = useState<'cod' | 'online'>('cod')
+  const [payment, setPayment] = useState<'cod' | 'online'>('online')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
-  const shipping = totalPrice > 999 ? 0 : 99
-  const gst      = Math.round(totalPrice * 0.05)
+  const shipping   = totalPrice > 999 ? 0 : 99
+  const gst        = Math.round(totalPrice * 0.05)
   const grandTotal = totalPrice + shipping + gst
+  const codUnlocked = totalPrice >= COD_MINIMUM
 
   const validate = () => {
     if (!name.trim())    { setError('Please enter your name'); return false }
@@ -47,7 +49,6 @@ export default function CheckoutPage() {
     if (!validate()) return
     setLoading(true)
     setError('')
-
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -63,16 +64,12 @@ export default function CheckoutPage() {
             quantity: i.quantity,
             price: i.price,
           })),
-          subtotal: totalPrice,
-          shipping_fee: shipping,
-          tax: gst,
           total_amount: grandTotal,
           payment_method: 'cod',
           payment_status: 'pending',
           user_id: user?.id || null,
         }),
       })
-
       if (!res.ok) throw new Error('Order failed')
       const { order_number } = await res.json()
       clearCart()
@@ -88,9 +85,7 @@ export default function CheckoutPage() {
     if (!validate()) return
     setLoading(true)
     setError('')
-
     try {
-      // 1. Create Razorpay order on server
       const res = await fetch('/api/razorpay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,29 +94,26 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error('Could not initiate payment')
       const { id: razorpay_order_id } = await res.json()
 
-      // 2. Load Razorpay script
       if (!window.Razorpay) {
         await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script')
-          script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-          script.onload = () => resolve()
-          script.onerror = () => reject(new Error('Razorpay script failed to load'))
-          document.body.appendChild(script)
+          const s = document.createElement('script')
+          s.src = 'https://checkout.razorpay.com/v1/checkout.js'
+          s.onload = () => resolve()
+          s.onerror = () => reject(new Error('Razorpay failed to load'))
+          document.body.appendChild(s)
         })
       }
 
-      // 3. Open Razorpay checkout
       const rzp = new window.Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: RAZORPAY_KEY,
         amount: grandTotal * 100,
         currency: 'INR',
         name: 'Wholesale Baazar',
-        description: `Order for ${items.length} item${items.length > 1 ? 's' : ''}`,
+        description: `Order (${items.length} item${items.length > 1 ? 's' : ''})`,
         order_id: razorpay_order_id,
         prefill: { name, email, contact: phone },
         theme: { color: '#0F766E' },
         handler: async (response: any) => {
-          // 4. Save order after payment success
           const orderRes = await fetch('/api/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -136,9 +128,6 @@ export default function CheckoutPage() {
                 quantity: i.quantity,
                 price: i.price,
               })),
-              subtotal: totalPrice,
-              shipping_fee: shipping,
-              tax: gst,
               total_amount: grandTotal,
               payment_method: 'razorpay',
               payment_status: 'paid',
@@ -152,10 +141,7 @@ export default function CheckoutPage() {
           router.push(`/orders/success?order=${order_number}`)
         },
         modal: {
-          ondismiss: () => {
-            setLoading(false)
-            setError('Payment cancelled.')
-          }
+          ondismiss: () => { setLoading(false); setError('Payment cancelled.') }
         }
       })
       rzp.open()
@@ -173,8 +159,7 @@ export default function CheckoutPage() {
           <ShoppingBag size={64} className="mx-auto mb-4" style={{ color: 'var(--text-secondary)', opacity: 0.4 }} />
           <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Your cart is empty</h2>
           <Link href="/products">
-            <button className="mt-4 px-8 py-3 rounded-xl font-semibold text-white"
-              style={{ backgroundColor: 'var(--primary)' }}>
+            <button className="mt-4 px-8 py-3 rounded-xl font-semibold text-white" style={{ backgroundColor: 'var(--primary)' }}>
               Browse Products
             </button>
           </Link>
@@ -186,7 +171,6 @@ export default function CheckoutPage() {
   return (
     <main style={{ backgroundColor: 'var(--background)', minHeight: '100vh' }}>
       <Header />
-
       <div className="max-w-5xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold mb-8" style={{ color: 'var(--text-primary)' }}>Checkout</h1>
 
@@ -195,19 +179,18 @@ export default function CheckoutPage() {
           {/* ── Left: Form ── */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Delivery details */}
+            {/* Delivery Details */}
             <div className="rounded-2xl border p-6" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
               <div className="flex items-center gap-2 mb-5">
                 <Truck size={20} style={{ color: 'var(--primary)' }} />
                 <h2 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Delivery Details</h2>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { label: 'Full Name *', value: name, set: setName, type: 'text', placeholder: 'Rahul Sharma' },
-                  { label: 'Email *', value: email, set: setEmail, type: 'email', placeholder: 'rahul@email.com' },
-                  { label: 'Phone *', value: phone, set: setPhone, type: 'tel', placeholder: '+91 9876543210' },
-                  { label: 'City *', value: city, set: setCity, type: 'text', placeholder: 'Mumbai' },
+                  { label: 'Full Name *',  value: name,  set: setName,  type: 'text',  placeholder: 'Rahul Sharma' },
+                  { label: 'Email *',      value: email, set: setEmail, type: 'email', placeholder: 'rahul@email.com' },
+                  { label: 'Phone *',      value: phone, set: setPhone, type: 'tel',   placeholder: '+91 9876543210' },
+                  { label: 'City *',       value: city,  set: setCity,  type: 'text',  placeholder: 'Mumbai' },
                 ].map(({ label, value, set, type, placeholder }) => (
                   <div key={label}>
                     <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>{label}</label>
@@ -221,7 +204,6 @@ export default function CheckoutPage() {
                     />
                   </div>
                 ))}
-
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Address *</label>
                   <input
@@ -233,7 +215,6 @@ export default function CheckoutPage() {
                     style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background)', color: 'var(--text-primary)' }}
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Pincode *</label>
                   <input
@@ -249,7 +230,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Payment method */}
+            {/* Payment Method */}
             <div className="rounded-2xl border p-6" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
               <div className="flex items-center gap-2 mb-5">
                 <CreditCard size={20} style={{ color: 'var(--primary)' }} />
@@ -257,31 +238,51 @@ export default function CheckoutPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  { value: 'cod', label: '💵 Cash on Delivery', sub: 'Pay when you receive' },
-                  { value: 'online', label: '💳 Pay Online', sub: 'UPI, Cards via Razorpay' },
-                ].map(opt => (
+
+                {/* COD Option */}
+                <div className="relative">
                   <button
-                    key={opt.value}
                     type="button"
-                    onClick={() => setPayment(opt.value as 'cod' | 'online')}
-                    className="p-4 rounded-xl border-2 text-left transition"
+                    onClick={() => codUnlocked && setPayment('cod')}
+                    disabled={!codUnlocked}
+                    className="w-full p-4 rounded-xl border-2 text-left transition"
                     style={{
-                      borderColor: payment === opt.value ? 'var(--primary)' : 'var(--border)',
-                      backgroundColor: payment === opt.value ? '#E0F2F0' : 'white',
+                      borderColor: !codUnlocked ? 'var(--border)' : payment === 'cod' ? 'var(--primary)' : 'var(--border)',
+                      backgroundColor: !codUnlocked ? 'var(--surface)' : payment === 'cod' ? '#E0F2F0' : 'white',
+                      opacity: !codUnlocked ? 0.6 : 1,
+                      cursor: !codUnlocked ? 'not-allowed' : 'pointer',
                     }}
                   >
-                    <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{opt.label}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{opt.sub}</p>
+                    <div className="flex items-center gap-2">
+                      {!codUnlocked && <Lock size={14} style={{ color: 'var(--text-secondary)' }} />}
+                      <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>💵 Cash on Delivery</p>
+                    </div>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                      {codUnlocked ? 'Pay when you receive' : `Add items worth ₹${COD_MINIMUM - totalPrice} more to unlock COD`}
+                    </p>
                   </button>
-                ))}
+                </div>
+
+                {/* Online Option */}
+                <button
+                  type="button"
+                  onClick={() => setPayment('online')}
+                  className="p-4 rounded-xl border-2 text-left transition"
+                  style={{
+                    borderColor: payment === 'online' ? 'var(--primary)' : 'var(--border)',
+                    backgroundColor: payment === 'online' ? '#E0F2F0' : 'white',
+                  }}
+                >
+                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>💳 Pay Online</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>UPI, Cards via Razorpay</p>
+                </button>
               </div>
 
               {payment === 'online' && (
                 <div className="mt-4 flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
                   style={{ backgroundColor: '#EFF6FF', color: '#1E40AF' }}>
                   <Lock size={14} />
-                  Secured by Razorpay — 100% safe & encrypted
+                  Secured by Razorpay — 100% safe &amp; encrypted
                 </div>
               )}
             </div>
@@ -314,9 +315,9 @@ export default function CheckoutPage() {
 
             <div className="space-y-2 mb-5 pb-5 border-b" style={{ borderColor: 'var(--border)' }}>
               {[
-                ['Subtotal', `₹${totalPrice.toLocaleString('en-IN')}`],
-                ['Shipping', shipping === 0 ? 'Free 🎉' : `₹${shipping}`],
-                ['GST (5%)', `₹${gst.toLocaleString('en-IN')}`],
+                ['Subtotal',   `₹${totalPrice.toLocaleString('en-IN')}`],
+                ['Shipping',   shipping === 0 ? 'Free 🎉' : `₹${shipping}`],
+                ['GST (5%)',   `₹${gst.toLocaleString('en-IN')}`],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between text-sm">
                   <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
