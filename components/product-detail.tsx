@@ -1,162 +1,322 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
+import { Star, ShoppingCart, Heart, Share2, Zap, Truck, Shield, RefreshCw } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useCart } from '@/lib/cart-context'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Zap, Star } from 'lucide-react'
-import Image from 'next/image'
+import ProductReviews from './product-reviews'
 
-export default function ProductsGrid() {
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
-  const { addItem } = useCart()
+interface Product {
+  id: string
+  name: string
+  description: string
+  price: number
+  base_price?: number
+  image_url?: string
+  image_urls?: string[]
+  rating: number
+  review_count: number
+  stock_quantity: number
+  min_order_quantity: number
+  supplier_id: string
+  discount_percent?: number
+  material?: string
+  care_instructions?: string
+  sizes?: string[]
+  category?: string
+}
+
+interface Supplier {
+  name: string
+  verified: boolean
+  country: string
+  email: string
+}
+
+interface ProductDetailProps {
+  productId: string
+}
+
+export default function ProductDetail({ productId }: ProductDetailProps) {
+  const [product, setProduct]   = useState<Product | null>(null)
+  const [supplier, setSupplier] = useState<Supplier | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [quantity, setQuantity] = useState(1)
+  const [selectedSize, setSelectedSize] = useState('M')
+  const [added, setAdded]       = useState(false)
+  const [buyingNow, setBuyingNow] = useState(false)
+  const [wishlisted, setWishlisted] = useState(false)
+  const [activeImage, setActiveImage] = useState(0)
+
+  const { addItem, items } = useCart()
   const router = useRouter()
+  const isInCart = product ? items.some(i => i.id === product.id) : false
 
   useEffect(() => {
-    const load = async () => {
+    const fetchProduct = async () => {
       try {
         const supabase = createClient()
         const { data, error } = await supabase
           .from('products')
-          .select('id, name, price, base_price, image_urls, rating, review_count, discount_percent')
-          .order('created_at', { ascending: false })
+          .select('*')
+          .eq('id', productId)
+          .single()
+
         if (error) throw error
-        setProducts(data || [])
-      } catch (e) {
-        console.error('Products error:', e)
-        setProducts([])
+        setProduct(data)
+
+        if (data.supplier_id) {
+          const { data: sup } = await supabase
+            .from('suppliers')
+            .select('*')
+            .eq('id', data.supplier_id)
+            .single()
+          setSupplier(sup)
+        }
+      } catch (err) {
+        console.error('Error fetching product:', err)
       } finally {
         setLoading(false)
       }
     }
-    load()
-  }, [])
+    fetchProduct()
+  }, [productId])
 
-  const handleAddToCart = (e: React.MouseEvent, p: any) => {
-    e.stopPropagation()
-    e.preventDefault()
+  const handleAddToCart = () => {
+    if (!product) return
     addItem({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      image_urls: p.image_urls || [],
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image_urls: product.image_urls || (product.image_url ? [product.image_url] : []),
+      discount_percent: product.discount_percent,
+      size: selectedSize,
     })
-    setAddedIds(prev => new Set(prev).add(p.id))
-    setTimeout(() => {
-      setAddedIds(prev => { const n = new Set(prev); n.delete(p.id); return n })
-    }, 1500)
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2500)
   }
 
-  const handleBuyNow = (e: React.MouseEvent, p: any) => {
-    e.stopPropagation()
-    e.preventDefault()
+  const handleBuyNow = () => {
+    if (!product) return
+    setBuyingNow(true)
     addItem({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      image_urls: p.image_urls || [],
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image_urls: product.image_urls || (product.image_url ? [product.image_url] : []),
+      discount_percent: product.discount_percent,
+      size: selectedSize,
     })
     router.push('/cart')
+    setBuyingNow(false)
   }
 
-  if (loading) return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-      {[...Array(8)].map((_, i) => (
-        <div key={i} className="rounded-xl animate-pulse" style={{ backgroundColor: 'var(--surface)', height: 320 }} />
-      ))}
-    </div>
-  )
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-12">
+        <div className="rounded-2xl h-96 animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+        <div className="space-y-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-6 rounded animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
-  if (!products.length) return (
-    <div className="p-8 text-center" style={{ color: 'var(--text-secondary)' }}>
-      No products found.
-    </div>
-  )
+  if (!product) {
+    return (
+      <div className="text-center py-12" style={{ color: 'var(--text-secondary)' }}>
+        Product not found.
+      </div>
+    )
+  }
+
+  const sizes     = product.sizes || ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+  const discount  = product.discount_percent || 0
+  const basePrice = product.base_price || product.price
+  const images    = product.image_urls?.length ? product.image_urls : product.image_url ? [product.image_url] : []
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-      {products.map(p => {
-        const img = p.image_urls?.[0] || '/placeholder.jpg'
-        const inCart = addedIds.has(p.id)
-        const discount = p.discount_percent || 0
-
-        return (
-          <div
-            key={p.id}
-            className="border rounded-xl overflow-hidden hover:shadow-lg transition cursor-pointer group"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
-            onClick={() => router.push(`/products/${p.id}`)}
+    <div className="space-y-12">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-12"
+      >
+        {/* Images */}
+        <div className="space-y-4">
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            className="relative rounded-2xl overflow-hidden border aspect-square"
+            style={{ borderColor: 'var(--border)' }}
           >
-            {/* Image */}
-            <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
-              <Image
-                src={img}
-                alt={p.name}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.jpg' }}
-              />
-              {discount > 0 && (
-                <span
-                  className="absolute top-2 left-2 text-xs font-bold text-white px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: 'var(--secondary)' }}
+            {images.length > 0 ? (
+              <Image src={images[activeImage]} alt={product.name} fill className="object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--surface)', fontSize: 80 }}>
+                👗
+              </div>
+            )}
+            {discount > 0 && (
+              <div className="absolute top-4 left-4 px-3 py-1 rounded-full text-white text-sm font-bold" style={{ backgroundColor: 'var(--secondary)' }}>
+                {discount}% OFF
+              </div>
+            )}
+          </motion.div>
+
+          {images.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(idx)}
+                  className="relative w-20 h-20 rounded-lg border-2 overflow-hidden flex-shrink-0"
+                  style={{ borderColor: activeImage === idx ? 'var(--primary)' : 'var(--border)' }}
                 >
-                  -{discount}%
+                  <Image src={img} alt="" fill className="object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Details */}
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }} className="space-y-5">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-1 rounded text-xs font-semibold" style={{ backgroundColor: '#E0F2F0', color: 'var(--primary)' }}>
+                {product.category || 'Fashion'}
+              </span>
+              {product.stock_quantity < 10 && product.stock_quantity > 0 && (
+                <span className="px-2 py-1 rounded text-xs font-semibold" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                  Only {product.stock_quantity} left!
                 </span>
               )}
             </div>
+            <h1 className="text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>{product.name}</h1>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75 }}>{product.description}</p>
+          </div>
 
-            {/* Info */}
-            <div className="p-3">
-              <p className="font-semibold text-sm mb-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>
-                {p.name}
-              </p>
+          {/* Rating */}
+          <div className="flex items-center gap-3">
+            <div className="flex gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={18} className={i < Math.round(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} />
+              ))}
+            </div>
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{product.rating}</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>({product.review_count} reviews)</span>
+          </div>
 
-              {p.rating && (
-                <div className="flex items-center gap-1 mb-1">
-                  <Star size={11} className="fill-yellow-400 text-yellow-400" />
-                  <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    {p.rating} ({p.review_count || 0})
-                  </span>
-                </div>
+          {/* Price */}
+          <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-4">
+              <span className="text-3xl font-bold" style={{ color: 'var(--primary)' }}>₹{product.price.toLocaleString()}</span>
+              {basePrice > product.price && (
+                <span className="text-xl line-through" style={{ color: 'var(--text-secondary)' }}>₹{basePrice.toLocaleString()}</span>
               )}
+            </div>
+            {discount > 0 && (
+              <p className="text-sm font-semibold mt-1" style={{ color: '#059669' }}>
+                You save ₹{(basePrice - product.price).toLocaleString()}
+              </p>
+            )}
+          </div>
 
-              <div className="flex items-center gap-2 mb-3">
-                <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>
-                  ₹{p.price?.toLocaleString('en-IN')}
-                </span>
-                {p.base_price && p.base_price > p.price && (
-                  <span className="text-xs line-through" style={{ color: 'var(--text-secondary)' }}>
-                    ₹{p.base_price?.toLocaleString('en-IN')}
-                  </span>
-                )}
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-1.5">
+          {/* Size */}
+          <div>
+            <p className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Size: <span className="font-normal">{selectedSize}</span></p>
+            <div className="flex flex-wrap gap-2">
+              {sizes.map(size => (
                 <button
-                  onClick={(e) => handleAddToCart(e, p)}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1 transition hover:opacity-90"
-                  style={{ backgroundColor: inCart ? '#059669' : 'var(--secondary)' }}
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className="px-4 py-2 rounded-lg border-2 font-semibold text-sm transition"
+                  style={{
+                    borderColor: selectedSize === size ? 'var(--primary)' : 'var(--border)',
+                    backgroundColor: selectedSize === size ? '#E0F2F0' : 'transparent',
+                    color: selectedSize === size ? 'var(--primary)' : 'var(--text-primary)',
+                  }}
                 >
-                  <ShoppingCart size={12} />
-                  {inCart ? '✓ Added' : 'Add to Cart'}
+                  {size}
                 </button>
-                <button
-                  onClick={(e) => handleBuyNow(e, p)}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1 transition hover:opacity-90"
-                  style={{ backgroundColor: 'var(--primary)' }}
-                >
-                  <Zap size={12} />
-                  Buy Now
-                </button>
-              </div>
+              ))}
             </div>
           </div>
-        )
-      })}
+
+          {/* Quantity */}
+          <div>
+            <p className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Quantity</p>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 rounded-lg border-2 font-bold text-lg transition hover:opacity-80" style={{ borderColor: 'var(--border)' }}>−</button>
+              <span className="text-lg font-bold w-8 text-center" style={{ color: 'var(--text-primary)' }}>{quantity}</span>
+              <button onClick={() => setQuantity(q => q + 1)} className="w-10 h-10 rounded-lg border-2 font-bold text-lg transition hover:opacity-80" style={{ borderColor: 'var(--border)' }}>+</button>
+            </div>
+          </div>
+
+          {/* Stock */}
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: product.stock_quantity > 0 ? '#059669' : '#DC2626' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              {product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+            </span>
+            {product.stock_quantity > 0 && <span style={{ color: 'var(--text-secondary)' }}>• Ships within 24 hours</span>}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <button
+              onClick={handleAddToCart}
+              disabled={product.stock_quantity === 0}
+              className="flex-1 py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: added || isInCart ? '#059669' : 'var(--secondary)' }}
+            >
+              <ShoppingCart size={20} />
+              {added ? '✓ Added to Cart!' : isInCart ? '✓ In Cart' : 'Add to Cart'}
+            </button>
+            <button
+              onClick={handleBuyNow}
+              disabled={product.stock_quantity === 0 || buyingNow}
+              className="flex-1 py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: 'var(--primary)' }}
+            >
+              <Zap size={20} />
+              {buyingNow ? 'Processing...' : 'Buy Now'}
+            </button>
+          </div>
+
+          {/* Trust Badges */}
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <Truck size={18} style={{ color: 'var(--primary)' }} /> Free Shipping
+            </div>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <Shield size={18} style={{ color: 'var(--primary)' }} /> Secure Payment
+            </div>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <RefreshCw size={18} style={{ color: 'var(--primary)' }} /> Easy Returns
+            </div>
+          </div>
+
+          {supplier && (
+            <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>Supplied by</p>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{supplier.name}</span>
+                {supplier.verified && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>✓ Verified</span>
+                )}
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </motion.div>
+
+      <ProductReviews productId={productId} />
     </div>
   )
 }
