@@ -28,15 +28,15 @@ export default function FeaturedProducts() {
   const { addItem } = useCart()
   const router = useRouter()
 
-  useEffect(() => {
+ useEffect(() => {
     const load = async () => {
       try {
         const supabase = createClient()
         const { data, error } = await supabase
           .from('products')
-          .select('id,name,price,base_price,image_url,image_urls,discount_percent,rating,review_count,stock_quantity')
+          .select('id,name,price,base_price,image_urls,discount_percent,rating,review_count')
           .limit(8)
-        if (error) throw error
+        console.log('Featured products:', data?.length, error?.message)
         setProducts(data || [])
       } catch (e) {
         console.error('Products error:', e)
@@ -45,9 +45,10 @@ export default function FeaturedProducts() {
         setLoading(false)
       }
     }
-    load()
+    // Small delay to let auth session settle
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
   }, [])
-
   const getImage = (p: Product) =>
     p.image_urls?.[0] || p.image_url || '/placeholder.jpg'
 
