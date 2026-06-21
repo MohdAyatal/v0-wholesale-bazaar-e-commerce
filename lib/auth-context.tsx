@@ -87,19 +87,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
 const signOut = async () => {
-    try {
-      const supabase = createClient()
-      await supabase.auth.signOut({ scope: 'global' })
-    } catch (e) {
-      console.error('Sign out error:', e)
-    }
-    setUser(null)
-    setProfile(null)
-    document.cookie.split(';').forEach(c => {
-      document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/'
-    })
-    window.location.href = '/login'
+  try {
+    const supabase = createClient()
+    await supabase.auth.signOut({ scope: 'global' })
+  } catch (e) {
+    console.error('Sign out error:', e)
   }
+  setUser(null)
+  setProfile(null)
+  // Clear all cookies
+  document.cookie.split(';').forEach(c => {
+    document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/'
+  })
+  window.location.href = '/login'
+}
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
