@@ -3,8 +3,6 @@
 import { Trash2, ShoppingBag, Plus, Minus } from 'lucide-react'
 import Link from 'next/link'
 import { useCart } from '@/lib/cart-context'
-import Link from 'next/link'
-
 export default function ShoppingCart() {
   const { items, removeItem, updateQuantity } = useCart()
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
