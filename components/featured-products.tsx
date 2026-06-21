@@ -112,9 +112,9 @@ export default function FeaturedProducts() {
           const discount = p.discount_percent || 0
 
           return (
-            <Link key={p.id} href={`/products/${p.id}`}>
-              <div
-                className="rounded-2xl border overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer group"
+            <div key={p.id}
+              onClick={() => router.push(`/products/${p.id}`)}
+              className="rounded-2xl border overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer group"
                 style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
               >
                 <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
@@ -165,7 +165,6 @@ export default function FeaturedProducts() {
                   </div>
                 </div>
               </div>
-            </Link>
           )
         })}
       </div>
