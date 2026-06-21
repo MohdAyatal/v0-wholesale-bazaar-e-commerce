@@ -3,6 +3,7 @@
 import { Trash2, ShoppingBag, Plus, Minus } from 'lucide-react'
 import Link from 'next/link'
 import { useCart } from '@/lib/cart-context'
+import Link from 'next/link'
 
 export default function ShoppingCart() {
   const { items, removeItem, updateQuantity } = useCart()
@@ -86,11 +87,13 @@ export default function ShoppingCart() {
               ₹{(total + Math.round(total * 0.18) + (total > 999 ? 0 : 99)).toLocaleString()}
             </span>
           </div>
-          <button disabled={items.length === 0}
-            className="w-full py-3 rounded-lg font-semibold text-white transition disabled:opacity-50"
-            style={{ backgroundColor: 'var(--primary)' }}>
-            Proceed to Checkout
-          </button>
+         <Link href="/checkout">
+            <button disabled={items.length === 0}
+              className="w-full py-3 rounded-lg font-semibold text-white transition disabled:opacity-50 hover:opacity-90"
+              style={{ backgroundColor: 'var(--primary)' }}>
+              Proceed to Checkout
+            </button>
+          </Link>
           <Link href="/products"
             className="block w-full text-center mt-3 py-3 border rounded-lg font-semibold transition hover:opacity-80"
             style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
