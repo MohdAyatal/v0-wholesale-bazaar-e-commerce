@@ -1,114 +1,128 @@
-'use client'
+// lib/auth-context.tsx
+'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
+import { createContext, useContext, useEffect, useState } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 
-interface Profile {
-  id: string
-  full_name: string
-  phone?: string
-  gender?: 'male' | 'female' | 'other'
-  preferred_categories?: string[]
-  avatar_url?: string
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  photo?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
-  user: User | null
-  profile: Profile | null
-  loading: boolean
-  signOut: () => Promise<void>
-  refreshProfile: () => Promise<void>
+  user: User | null;
+  loading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  profile: null,
-  loading: true,
-  signOut: async () => {},
-  refreshProfile: async () => {},
-})
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser]       = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      setProfile(data ?? null)
-    } catch {
-      setProfile(null)
-    }
-  }
-
-  const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id)
-  }
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Use the hardcoded credentials from your context
+  const supabase = createBrowserClient(
+    'https://lpjlgwvjspfujjcfatww.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxwamxnd3Zqc3BmdWpqY2ZhdHd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDIwOTQsImV4cCI6MjA5NTMxODA5NH0.Zy0Fw2-cv86Xw_1-PvnST4G2Jnlg1BfAv9dFKfQGqTI'
+  );
 
   useEffect(() => {
-    const supabase = createClient()
-
-    // Timeout fallback — never hang forever
-    const timeout = setTimeout(() => setLoading(false), 5000)
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(timeout)
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      setLoading(false)
-    }).catch(() => {
-      clearTimeout(timeout)
-      setLoading(false)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchProfile(session.user.id)
-        } else {
-          setProfile(null)
-        }
-        setLoading(false)
+    // Check for existing session on mount
+    const initSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.user_metadata?.full_name || session.user.email!.split('@')[0],
+          photo: session.user.user_metadata?.avatar_url,
+          phone: session.user.user_metadata?.phone
+        });
       }
-    )
+      
+      // Listen for auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (event === 'SIGNED_IN' && session?.user) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email!,
+              name: session.user.user_metadata?.full_name || session.user.email!.split('@')[0],
+              photo: session.user.user_metadata?.avatar_url,
+              phone: session.user.user_metadata?.phone
+            });
+            localStorage.setItem('wb_user', JSON.stringify(session.user));
+          } else if (event === 'SIGNED_OUT') {
+            setUser(null);
+            localStorage.removeItem('wb_user');
+          }
+        }
+      );
 
-    return () => {
-      clearTimeout(timeout)
-      subscription.unsubscribe()
+      setLoading(false);
+      return () => subscription.unsubscribe();
+    };
+
+    initSession();
+  }, []);
+
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      }
+    });
+  };
+
+  const signOut = async () => {
+    // Clear Supabase session
+    await supabase.auth.signOut({ scope: 'global' });
+    
+    // Clear all local storage except cookie consent
+    const cookieConsent = localStorage.getItem('wb_cookie_consent');
+    localStorage.clear();
+    if (cookieConsent) localStorage.setItem('wb_cookie_consent', cookieConsent);
+    
+    setUser(null);
+    window.location.href = '/';
+  };
+
+  const updateProfile = async (data: Partial<User>) => {
+    if (!user) return;
+    
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        full_name: data.name,
+        phone: data.phone
+      }
+    });
+    
+    if (!error) {
+      setUser({ ...user, ...data });
     }
-  }, [])
-
-const signOut = async () => {
-  try {
-    const supabase = createClient()
-    await supabase.auth.signOut({ scope: 'global' })
-  } catch (e) {
-    console.error('Sign out error:', e)
-  }
-  setUser(null)
-  setProfile(null)
-  // Clear all cookies
-  document.cookie.split(';').forEach(c => {
-    document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/'
-  })
-  window.location.href = '/login'
-}
+  };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
-export function useAuth() {
-  return useContext(AuthContext)
-}
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  return context;
+};
