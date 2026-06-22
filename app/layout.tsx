@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/lib/cart-context'
 import { AuthProvider } from '@/lib/auth-context'
+import CookieBanner from '@/components/cookie-banner'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'] })
@@ -25,6 +26,7 @@ export default function RootLayout({
             {children}
           </CartProvider>
         </AuthProvider>
+     <CookieBanner />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
