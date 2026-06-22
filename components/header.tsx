@@ -143,7 +143,7 @@ const handleSignOut = async () => {
                     }}
                   />
                   <span className="text-sm font-medium hidden md:block" style={{ color: 'var(--text-primary)' }}>
-                    {user.=name?.split(' ')[0] || profile?.full_name?.split(' ')[0] || 'Account'}
+                    {user.name?.split(' ')[0] || profile?.full_name?.split(' ')[0] || 'Account'}
                   </span>
                 </button>
 
