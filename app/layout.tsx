@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
@@ -13,6 +14,14 @@ export const metadata: Metadata = {
   description: 'Discover premium Mens Womens and Kids wear, Home decor & accessories from verified suppliers all over India.',
 }
 
+// Add this for TypeScript
+declare global {
+  interface Window {
+    reopenCookieConsent?: () => void
+    openPolicy?: (key: string) => void
+  }
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -26,7 +35,7 @@ export default function RootLayout({
             {children}
           </CartProvider>
         </AuthProvider>
-     <CookieBanner />
+        <CookieBanner />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
