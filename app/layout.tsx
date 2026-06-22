@@ -33,9 +33,9 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             {children}
-          </CartProvider>
-        </AuthProvider>
-        <CookieBanner />
+          <CookieBanner />
+        </CartProvider>
+      </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
