@@ -8,8 +8,11 @@ interface User {
   id: string;
   email: string;
   name: string;
+  full_name?: string;
   photo?: string;
   phone?: string;
+  gender?: string;
+  preferred_categories?: string[];
 }
 
 interface AuthContextType {
