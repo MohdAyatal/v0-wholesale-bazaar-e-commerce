@@ -1,99 +1,83 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+// app/api/orders/route.ts
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { Resend } from 'resend'; // or use Brevo/SendGrid
 
-export async function GET(request: Request) {
-  try {
-    const cookieStore = await cookies() // Add await here
-    
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          },
-        },
-      }
-    )
-
-    // Get user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Fetch orders for this user
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching orders:', error)
-      return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 })
-    }
-
-    return NextResponse.json({ orders })
-
-  } catch (error) {
-    console.error('Orders API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
+  const supabase = createRouteHandlerClient({ cookies });
+  
   try {
-    const cookieStore = await cookies() // Add await here
-    
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          },
-        },
-      }
-    )
+    const body = await request.json();
+    const { 
+      customer_name, 
+      customer_email, 
+      customer_phone, 
+      shipping_address,
+      items,
+      total_amount,
+      payment_method 
+    } = body;
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Generate Order ID
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const seg = (n: number) => Array.from({length: n}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const now = new Date();
+    const order_number = `WB${now.getFullYear().toString().slice(-2)}${String(now.getMonth()+1).padStart(2,'0')}-${seg(3)}-${seg(4)}`;
 
-    const body = await request.json()
-    
-    // Create order
-    const { data: order, error } = await supabase
+    // Save to Supabase
+    const { data, error } = await supabase
       .from('orders')
       .insert({
-        ...body,
-        user_id: user.id,
+        order_number,
+        customer_name,
+        customer_email,
+        customer_phone,
+        shipping_address,
+        total_amount,
+        payment_method,
+        status: 'Pending',
+        payment_status: payment_method === 'COD' ? 'pending' : 'paid',
+        items: JSON.stringify(items),
+        created_at: new Date().toISOString()
       })
       .select()
-      .single()
+      .single();
 
-    if (error) {
-      console.error('Error creating order:', error)
-      return NextResponse.json({ error: 'Failed to create order' }, { status: 500 })
-    }
+    if (error) throw error;
 
-    return NextResponse.json({ order })
+    // Send confirmation email via Brevo (SMTP)
+    await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': process.env.BREVO_API_KEY!,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { name: 'Wholesale Baazar', email: 'wholesalebazaar.support@gmail.com' },
+        to: [{ email: customer_email, name: customer_name }],
+        subject: `Order Confirmation: ${order_number}`,
+        htmlContent: `
+          <h2>Thank you for your order!</h2>
+          <p>Order ID: <strong>${order_number}</strong></p>
+          <p>Total: ₹${total_amount.toLocaleString('en-IN')}</p>
+          <p>We'll contact you at ${customer_phone} to confirm delivery.</p>
+        `
+      })
+    });
+
+    // Send WhatsApp notification (via your WhatsApp Business API)
+    // await sendWhatsAppNotification(customer_phone, order_number);
+
+    return NextResponse.json({ success: true, order_number, order: data });
 
   } catch (error) {
-    console.error('Orders API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Order creation failed:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to create order' },
+      { status: 500 }
+    );
   }
 }
