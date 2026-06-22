@@ -135,7 +135,7 @@ const handleSignOut = async () => {
                   style={{ backgroundColor: 'var(--surface)' }}
                 >
                   <img 
-                    src={user.user_metadata?.avatar_url || profile?.avatar_url || '/placeholder-user.jpg'} 
+                    src={user.photo || profile?.photo || '/placeholder-avatar.png'}
                     className="w-8 h-8 rounded-full object-cover" 
                     alt="avatar" 
                     onError={(e) => {
@@ -143,7 +143,7 @@ const handleSignOut = async () => {
                     }}
                   />
                   <span className="text-sm font-medium hidden md:block" style={{ color: 'var(--text-primary)' }}>
-                    {user.user_metadata?.full_name?.split(' ')[0] || profile?.full_name?.split(' ')[0] || 'Account'}
+                    {user.=name?.split(' ')[0] || profile?.full_name?.split(' ')[0] || 'Account'}
                   </span>
                 </button>
 
@@ -156,7 +156,7 @@ const handleSignOut = async () => {
                   >
                     <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
                       <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                        {user.user_metadata?.full_name || profile?.full_name || 'My Account'}
+                        {user.name || profile?.full_name || 'My Account'}
                       </p>
                       <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                         {user.email}
