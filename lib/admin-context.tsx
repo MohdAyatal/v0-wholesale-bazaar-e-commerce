@@ -1,15 +1,12 @@
 'use client'
-
 import { createContext, useContext, useState, useEffect } from 'react'
 
-interface AuthContextType {
-  user: User | null;
-  profile: User | null;
-  loading: boolean;
-  signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
-  updateProfile: (data: Partial<User>) => Promise<void>;
-  refreshProfile: () => Promise<void>;
+interface AdminContextType {
+  isAuthenticated: boolean
+  adminEmail: string | null
+  loading: boolean
+  login: (email: string, password: string) => Promise<boolean>
+  logout: () => void
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined)
@@ -20,17 +17,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if admin is already authenticated (from localStorage)
     const storedEmail = localStorage.getItem('admin_email')
     const storedToken = localStorage.getItem('admin_token')
-    
     if (storedEmail && storedToken) {
-      // Verify token is still valid
       const tokenTime = localStorage.getItem('admin_token_time')
-      const now = Date.now()
-      const tokenAge = now - parseInt(tokenTime || '0')
-      
-      // Token expires after 24 hours
+      const tokenAge = Date.now() - parseInt(tokenTime || '0')
       if (tokenAge < 24 * 60 * 60 * 1000) {
         setAdminEmail(storedEmail)
         setIsAuthenticated(true)
@@ -40,7 +31,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('admin_token_time')
       }
     }
-    
     setLoading(false)
   }, [])
 
@@ -51,7 +41,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       })
-
       if (response.ok) {
         const data = await response.json()
         setAdminEmail(email)
@@ -77,7 +66,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile: user, loading, signInWithGoogle, signOut, updateProfile, refreshProfile: async () => {} }}>
+    <AdminContext.Provider value={{ isAuthenticated, adminEmail, loading, login, logout }}>
       {children}
     </AdminContext.Provider>
   )
