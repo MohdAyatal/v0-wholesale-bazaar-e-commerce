@@ -45,8 +45,8 @@ export default function ProfilePage() {
       setPhone(profile.phone || '')
       setGender(profile.gender || '')
       setCategories(profile.preferred_categories || [])
-    } else if (user) {
-      setFullName(user.user_metadata?.full_name || '')
+  } else if (user) {
+      setFullName(user.name || '')
     }
   }, [profile, user])
 
