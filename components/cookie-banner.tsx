@@ -36,10 +36,10 @@ export default function CookieBanner() {
     return () => clearTimeout(timer)
   }, [])
 
-  const applyPreferences = (p: CookiePrefs) => {
+    const applyPreferences = (p: CookiePrefs) => {
     // Initialize GA if analytics accepted
-    if (p.analytics && typeof window.gtag !== 'undefined') {
-      window.gtag('consent', 'update', {
+    if (p.analytics && typeof (window as any).gtag !== 'undefined') {
+      ;(window as any).gtag('consent', 'update', {
         analytics_storage: 'granted',
         ad_storage: p.marketing ? 'granted' : 'denied'
       })
@@ -59,9 +59,8 @@ export default function CookieBanner() {
     setShowBanner(false)
     
     // Track consent event
-    if (typeof window.gtag !== 'undefined') {
-      window.gtag('event', 'cookie_consent', {
-        event_category: 'engagement',
+    if (typeof (window as any).gtag !== 'undefined') {
+      ;(window as any).gtag('event', 'cookie_consent', {
         event_label: type
       })
     }
