@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   const { user } = useAuth()
   const router = useRouter()
 
-  const [name,    setName]    = useState(user?.user_metadata?.full_name || '')
+  const [name,    setName]    = useState(user?.name || '')
   const [email,   setEmail]   = useState(user?.email || '')
   const [phone,   setPhone]   = useState('')
   const [address, setAddress] = useState('')
