@@ -14,10 +14,12 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  profile: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -115,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut, updateProfile }}>
+   <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
