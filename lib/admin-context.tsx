@@ -2,12 +2,14 @@
 
 import { createContext, useContext, useState, useEffect } from 'react'
 
-interface AdminContextType {
-  isAuthenticated: boolean
-  adminEmail: string | null
-  login: (email: string, password: string) => Promise<boolean>
-  logout: () => void
-  loading: boolean
+interface AuthContextType {
+  user: User | null;
+  profile: User | null;
+  loading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined)
@@ -75,7 +77,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AdminContext.Provider value={{ isAuthenticated, adminEmail, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, profile: user, loading, signInWithGoogle, signOut, updateProfile, refreshProfile: async () => {} }}>
       {children}
     </AdminContext.Provider>
   )
