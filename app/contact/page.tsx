@@ -59,7 +59,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Email</h3>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>support@wholesalebaazar.com</p>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>wholesalebazaar.support@gmail.com</p>
               </div>
             </div>
             <p style={{ color: 'var(--text-secondary)' }}>We respond within 24 hours</p>
@@ -285,7 +285,7 @@ export default function ContactPage() {
             <div>
               <h3 className="font-bold mb-4">Support</h3>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li>Email: support@wholesalebaazar.com</li>
+                <li>Email: wholesalebazaar.support@gmail.com</li>
                 <li>Phone: +91-8840130533</li>
                 <li>WhatsApp: 8840130533</li>
               </ul>
