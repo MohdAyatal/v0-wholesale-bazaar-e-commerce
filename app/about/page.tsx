@@ -132,7 +132,7 @@ export default function AboutPage() {
                 <Mail size={24} style={{ color: 'var(--accent)', flexShrink: 0 }} />
                 <div>
                   <h4 className="font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Email</h4>
-                  <p style={{ color: 'var(--text-secondary)' }}>info@wholesalebaazar.com</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>wholesalebazaar.support@gmail.com</p>
                 </div>
               </div>
 
