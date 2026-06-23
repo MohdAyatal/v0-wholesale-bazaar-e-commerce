@@ -255,9 +255,9 @@ export default function ContactPage() {
                 </button>
 
                 <p style={{ color: 'var(--text-secondary)' }} className="text-xs">
-                  Or use this Google Form for detailed bulk ordering: 
+                  Or contact on Whatsapp for detailed bulk ordering: 
                   <a href="https://forms.gle/" target="_blank" rel="noopener noreferrer" className="underline ml-1" style={{ color: 'var(--primary)' }}>
-                    https://forms.gle/[YOUR_FORM_ID]
+                    href="https://wa.me/918840130533?text=Hi%20Wholesale%20Baazar%2C%20I%20have%20an%20enquiry"
                   </a>
                 </p>
               </div>
