@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Package, Filter, Download, Edit2, Eye, Trash2, X, Check } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Package, Download, Edit2, Eye, Trash2, X, Check } from 'lucide-react'
 
 interface Order {
   id: string
@@ -29,6 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function AdminOrdersPage() {
+  const [authorized, setAuthorized] = useState(false)
   const [orders, setOrders]         = useState<Order[]>([])
   const [loading, setLoading]       = useState(true)
   const [filterStatus, setFilter]   = useState('all')
@@ -39,8 +41,18 @@ export default function AdminOrdersPage() {
   const [editTracking, setEditTracking] = useState('')
   const [saving, setSaving]         = useState(false)
   const [msg, setMsg]               = useState('')
+  const router = useRouter()
 
-  useEffect(() => { fetchOrders() }, [])
+  useEffect(() => {
+    // Check admin token — redirect instantly if not authorized
+    const token = sessionStorage.getItem('wb_admin_token')
+    if (token !== 'wb_admin_2025_secure') {
+      router.replace('/admin/login')
+      return
+    }
+    setAuthorized(true)
+    fetchOrders()
+  }, [router])
 
   const fetchOrders = async () => {
     try {
@@ -56,7 +68,7 @@ export default function AdminOrdersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this order? This cannot be undone.')) return
+    if (!confirm('Delete this order? Cannot be undone.')) return
     try {
       await fetch('/api/orders', {
         method: 'DELETE',
@@ -76,16 +88,10 @@ export default function AdminOrdersPage() {
       await fetch('/api/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingId,
-          status: editStatus,
-          tracking_number: editTracking
-        })
+        body: JSON.stringify({ id: editingId, status: editStatus, tracking_number: editTracking })
       })
       setOrders(prev => prev.map(o =>
-        o.id === editingId
-          ? { ...o, status: editStatus, tracking_number: editTracking }
-          : o
+        o.id === editingId ? { ...o, status: editStatus, tracking_number: editTracking } : o
       ))
       setEditingId(null)
       setMsg('Order updated!')
@@ -104,14 +110,13 @@ export default function AdminOrdersPage() {
       if (sortBy === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       if (sortBy === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       if (sortBy === 'highest') return b.total_amount - a.total_amount
-      if (sortBy === 'lowest') return a.total_amount - b.total_amount
       return 0
     })
 
   const stats = {
     total:     orders.length,
     pending:   orders.filter(o => o.status === 'pending').length,
-    transit:   orders.filter(o => ['shipped','processing'].includes(o.status)).length,
+    shipped:   orders.filter(o => o.status === 'shipped').length,
     delivered: orders.filter(o => o.status === 'delivered').length,
     revenue:   orders.reduce((s, o) => s + (o.total_amount || 0), 0)
   }
@@ -128,9 +133,12 @@ export default function AdminOrdersPage() {
     const csv = rows.map(r => r.join(',')).join('\n')
     const a = document.createElement('a')
     a.href = 'data:text/csv,' + encodeURIComponent(csv)
-    a.download = 'orders.csv'
+    a.download = 'wb-orders.csv'
     a.click()
   }
+
+  // Block render until auth confirmed
+  if (!authorized) return null
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
@@ -144,29 +152,35 @@ export default function AdminOrdersPage() {
                 <Package size={22} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                  Order Management
-                </h1>
+                <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Order Management</h1>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  Real orders from Supabase
+                  Manage and track all customer orders
                 </p>
               </div>
             </div>
-            <button
-              onClick={exportCSV}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition hover:opacity-80"
-              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-            >
-              <Download size={16} /> Export CSV
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={exportCSV}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition hover:opacity-80"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+              >
+                <Download size={16} /> Export CSV
+              </button>
+              <button
+                onClick={() => router.push('/admin')}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white transition hover:opacity-90"
+                style={{ backgroundColor: 'var(--primary)' }}
+              >
+                ← Dashboard
+              </button>
+            </div>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
               { label: 'Total Orders', value: stats.total,    bg: '#EFF6FF', color: '#1D4ED8' },
               { label: 'Pending',      value: stats.pending,  bg: '#FFFBEB', color: '#92400E' },
-              { label: 'In Transit',   value: stats.transit,  bg: '#F5F3FF', color: '#6D28D9' },
+              { label: 'Shipped',      value: stats.shipped,  bg: '#F5F3FF', color: '#6D28D9' },
               { label: 'Delivered',    value: stats.delivered, bg: '#ECFDF5', color: '#065F46' },
               { label: 'Revenue',      value: `₹${stats.revenue.toLocaleString('en-IN')}`, bg: '#ECFDF5', color: '#065F46' },
             ].map(s => (
@@ -180,7 +194,6 @@ export default function AdminOrdersPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
-
         {msg && (
           <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium"
             style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
@@ -192,63 +205,42 @@ export default function AdminOrdersPage() {
         <div className="bg-white rounded-xl border p-4 mb-6 flex flex-wrap gap-4"
           style={{ borderColor: 'var(--border)' }}>
           <div className="flex-1 min-w-[160px]">
-            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-              Filter by Status
-            </label>
-            <select
-              value={filterStatus}
-              onChange={e => setFilter(e.target.value)}
+            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Status</label>
+            <select value={filterStatus} onChange={e => setFilter(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm outline-none"
-              style={{ borderColor: 'var(--border)' }}
-            >
+              style={{ borderColor: 'var(--border)' }}>
               <option value="all">All Orders</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="processing">Processing</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
+              {['pending','confirmed','processing','shipped','delivered','cancelled'].map(s => (
+                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+              ))}
             </select>
           </div>
           <div className="flex-1 min-w-[160px]">
-            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>
-              Sort by
-            </label>
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
+            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Sort by</label>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm outline-none"
-              style={{ borderColor: 'var(--border)' }}
-            >
+              style={{ borderColor: 'var(--border)' }}>
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
               <option value="highest">Highest Amount</option>
-              <option value="lowest">Lowest Amount</option>
             </select>
           </div>
           <div className="flex items-end">
-            <button
-              onClick={fetchOrders}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
-              style={{ backgroundColor: 'var(--primary)' }}
-            >
+            <button onClick={fetchOrders}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+              style={{ backgroundColor: 'var(--primary)' }}>
               Refresh
             </button>
           </div>
         </div>
 
-        {/* Table */}
         {loading ? (
-          <div className="text-center py-16" style={{ color: 'var(--text-secondary)' }}>
-            Loading orders...
-          </div>
+          <div className="text-center py-16" style={{ color: 'var(--text-secondary)' }}>Loading orders...</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl border" style={{ borderColor: 'var(--border)' }}>
             <Package size={48} className="mx-auto mb-4 opacity-30" />
             <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>No orders yet</p>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-              Orders placed by customers will appear here
-            </p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Customer orders will appear here</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
@@ -258,53 +250,34 @@ export default function AdminOrdersPage() {
                   <tr>
                     {['Order','Customer','Amount','Status','Payment','Date','Actions'].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold"
-                        style={{ color: 'var(--text-secondary)' }}>
-                        {h}
-                      </th>
+                        style={{ color: 'var(--text-secondary)' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(order => (
-                    <tr key={order.id}
-                      className="border-t hover:bg-gray-50 transition"
-                      style={{ borderColor: 'var(--border)' }}
-                    >
+                    <tr key={order.id} className="border-t hover:bg-gray-50 transition"
+                      style={{ borderColor: 'var(--border)' }}>
                       <td className="px-4 py-4">
-                        <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                          {order.order_number}
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                          {parseItems(order.items).length} item(s)
-                        </p>
+                        <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{order.order_number}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{parseItems(order.items).length} item(s)</p>
                       </td>
                       <td className="px-4 py-4">
-                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                          {order.customer_name}
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                          {order.customer_email}
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                          {order.customer_phone}
-                        </p>
+                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{order.customer_name}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{order.customer_email}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{order.customer_phone}</p>
                       </td>
                       <td className="px-4 py-4">
                         <p className="font-bold text-sm" style={{ color: 'var(--primary)' }}>
                           ₹{order.total_amount?.toLocaleString('en-IN')}
                         </p>
-                        <p className="text-xs capitalize" style={{ color: 'var(--text-secondary)' }}>
-                          {order.payment_method}
-                        </p>
+                        <p className="text-xs capitalize" style={{ color: 'var(--text-secondary)' }}>{order.payment_method}</p>
                       </td>
                       <td className="px-4 py-4">
                         {editingId === order.id ? (
-                          <select
-                            value={editStatus}
-                            onChange={e => setEditStatus(e.target.value)}
+                          <select value={editStatus} onChange={e => setEditStatus(e.target.value)}
                             className="px-2 py-1 border rounded text-xs outline-none"
-                            style={{ borderColor: 'var(--border)' }}
-                          >
+                            style={{ borderColor: 'var(--border)' }}>
                             {['pending','confirmed','processing','shipped','delivered','cancelled'].map(s => (
                               <option key={s} value={s}>{s}</option>
                             ))}
@@ -316,9 +289,10 @@ export default function AdminOrdersPage() {
                         )}
                       </td>
                       <td className="px-4 py-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${order.payment_status === 'paid' || order.payment_status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                          {order.payment_status}
-                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          order.payment_status === 'paid' || order.payment_status === 'completed'
+                            ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>{order.payment_status}</span>
                       </td>
                       <td className="px-4 py-4 text-xs" style={{ color: 'var(--text-secondary)' }}>
                         {new Date(order.created_at).toLocaleDateString('en-IN')}
@@ -328,38 +302,26 @@ export default function AdminOrdersPage() {
                           {editingId === order.id ? (
                             <>
                               <button onClick={handleSaveEdit} disabled={saving}
-                                className="p-1.5 rounded hover:bg-green-50 transition"
-                                title="Save">
+                                className="p-1.5 rounded hover:bg-green-50">
                                 <Check size={16} style={{ color: '#059669' }} />
                               </button>
                               <button onClick={() => setEditingId(null)}
-                                className="p-1.5 rounded hover:bg-red-50 transition"
-                                title="Cancel">
+                                className="p-1.5 rounded hover:bg-red-50">
                                 <X size={16} style={{ color: '#DC2626' }} />
                               </button>
                             </>
                           ) : (
                             <>
-                              <button
-                                onClick={() => setSelected(order)}
-                                className="p-1.5 rounded hover:bg-gray-100 transition"
-                                title="View">
+                              <button onClick={() => setSelected(order)}
+                                className="p-1.5 rounded hover:bg-gray-100">
                                 <Eye size={16} style={{ color: 'var(--text-secondary)' }} />
                               </button>
-                              <button
-                                onClick={() => {
-                                  setEditingId(order.id)
-                                  setEditStatus(order.status)
-                                  setEditTracking(order.tracking_number || '')
-                                }}
-                                className="p-1.5 rounded hover:bg-gray-100 transition"
-                                title="Edit Status">
+                              <button onClick={() => { setEditingId(order.id); setEditStatus(order.status); setEditTracking(order.tracking_number || '') }}
+                                className="p-1.5 rounded hover:bg-gray-100">
                                 <Edit2 size={16} style={{ color: 'var(--text-secondary)' }} />
                               </button>
-                              <button
-                                onClick={() => handleDelete(order.id)}
-                                className="p-1.5 rounded hover:bg-red-50 transition"
-                                title="Delete">
+                              <button onClick={() => handleDelete(order.id)}
+                                className="p-1.5 rounded hover:bg-red-50">
                                 <Trash2 size={16} style={{ color: '#DC2626' }} />
                               </button>
                             </>
@@ -379,28 +341,20 @@ export default function AdminOrdersPage() {
         </p>
       </div>
 
-      {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => setSelected(null)}>
-          <div
-            className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {selectedOrder.order_number}
-                </h2>
+                <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{selectedOrder.order_number}</h2>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                   {new Date(selectedOrder.created_at).toLocaleString('en-IN')}
                 </p>
               </div>
-              <button onClick={() => setSelected(null)} className="p-1 hover:opacity-70">
-                <X size={20} />
-              </button>
+              <button onClick={() => setSelected(null)}><X size={20} /></button>
             </div>
-
             <div className="space-y-3 text-sm">
               {[
                 ['Customer', selectedOrder.customer_name],
@@ -417,7 +371,6 @@ export default function AdminOrdersPage() {
                   <span className="font-medium text-right max-w-[60%]" style={{ color: 'var(--text-primary)' }}>{value}</span>
                 </div>
               ))}
-
               <div>
                 <p className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Items</p>
                 {parseItems(selectedOrder.items).map((item: any, i: number) => (
