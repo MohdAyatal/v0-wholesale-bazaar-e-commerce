@@ -7,6 +7,26 @@ import { useRouter } from 'next/navigation'
 import { ShoppingCart, Zap, Star } from 'lucide-react'
 import Image from 'next/image'
 
+function ProductSkeleton() {
+  return (
+    <div
+      className="border rounded-xl overflow-hidden animate-pulse"
+      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+    >
+      <div style={{ aspectRatio: '3/4', backgroundColor: 'var(--border)' }} />
+      <div className="p-3 space-y-2">
+        <div className="h-3.5 rounded" style={{ backgroundColor: 'var(--border)', width: '85%' }} />
+        <div className="h-3.5 rounded" style={{ backgroundColor: 'var(--border)', width: '55%' }} />
+        <div className="h-3 rounded" style={{ backgroundColor: 'var(--border)', width: '40%' }} />
+        <div className="flex gap-1.5 pt-1">
+          <div className="h-7 rounded-lg flex-1" style={{ backgroundColor: 'var(--border)' }} />
+          <div className="h-7 rounded-lg flex-1" style={{ backgroundColor: 'var(--border)' }} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ProductsGrid() {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -20,8 +40,8 @@ export default function ProductsGrid() {
         const supabase = createClient()
         const { data, error } = await supabase
           .from('products')
-          .select('id, name, price, base_price, image_urls, rating, review_count, discount_percent')
-          .order('created_at', { ascending: false })
+          .select('id, name, price, base_price, image_url, image_urls, rating, review_count')
+          .order('id', { ascending: false })
         if (error) throw error
         setProducts(data || [])
       } catch (e) {
@@ -37,12 +57,7 @@ export default function ProductsGrid() {
   const handleAddToCart = (e: React.MouseEvent, p: any) => {
     e.stopPropagation()
     e.preventDefault()
-    addItem({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      image_urls: p.image_urls || [],
-    })
+    addItem({ id: p.id, name: p.name, price: p.price, image_urls: p.image_urls || [] })
     setAddedIds(prev => new Set(prev).add(p.id))
     setTimeout(() => {
       setAddedIds(prev => { const n = new Set(prev); n.delete(p.id); return n })
@@ -52,20 +67,13 @@ export default function ProductsGrid() {
   const handleBuyNow = (e: React.MouseEvent, p: any) => {
     e.stopPropagation()
     e.preventDefault()
-    addItem({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      image_urls: p.image_urls || [],
-    })
+    addItem({ id: p.id, name: p.name, price: p.price, image_urls: p.image_urls || [] })
     router.push('/cart')
   }
 
   if (loading) return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-      {[...Array(8)].map((_, i) => (
-        <div key={i} className="rounded-xl animate-pulse" style={{ backgroundColor: 'var(--surface)', height: 320 }} />
-      ))}
+      {[...Array(8)].map((_, i) => <ProductSkeleton key={i} />)}
     </div>
   )
 
@@ -78,9 +86,8 @@ export default function ProductsGrid() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
       {products.map(p => {
-        const img = p.image_urls?.[0] || '/placeholder.jpg'
+        const img = p.image_urls?.[0] || p.image_url || '/placeholder.jpg'
         const inCart = addedIds.has(p.id)
-        const discount = p.discount_percent || 0
 
         return (
           <div
@@ -89,7 +96,6 @@ export default function ProductsGrid() {
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
             onClick={() => router.push(`/products/${p.id}`)}
           >
-            {/* Image */}
             <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
               <Image
                 src={img}
@@ -98,17 +104,8 @@ export default function ProductsGrid() {
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.jpg' }}
               />
-              {discount > 0 && (
-                <span
-                  className="absolute top-2 left-2 text-xs font-bold text-white px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: 'var(--secondary)' }}
-                >
-                  -{discount}%
-                </span>
-              )}
             </div>
 
-            {/* Info */}
             <div className="p-3">
               <p className="font-semibold text-sm mb-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>
                 {p.name}
@@ -134,7 +131,6 @@ export default function ProductsGrid() {
                 )}
               </div>
 
-              {/* Buttons */}
               <div className="flex gap-1.5">
                 <button
                   onClick={(e) => handleAddToCart(e, p)}
