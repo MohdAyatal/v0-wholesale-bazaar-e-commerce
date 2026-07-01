@@ -7,20 +7,29 @@ import { useRouter } from 'next/navigation'
 import { ShoppingCart, Zap, Star } from 'lucide-react'
 import Image from 'next/image'
 
-function ProductSkeleton() {
+function SkeletonCard() {
   return (
     <div
-      className="border rounded-xl overflow-hidden animate-pulse"
+      className="border rounded-xl overflow-hidden"
       style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
     >
-      <div style={{ aspectRatio: '3/4', backgroundColor: 'var(--border)' }} />
+      {/* Image skeleton */}
+      <div
+        className="animate-pulse"
+        style={{ aspectRatio: '3/4', backgroundColor: '#E5E7EB' }}
+      />
       <div className="p-3 space-y-2">
-        <div className="h-3.5 rounded" style={{ backgroundColor: 'var(--border)', width: '85%' }} />
-        <div className="h-3.5 rounded" style={{ backgroundColor: 'var(--border)', width: '55%' }} />
-        <div className="h-3 rounded" style={{ backgroundColor: 'var(--border)', width: '40%' }} />
+        {/* Title lines */}
+        <div className="animate-pulse h-3.5 rounded-full" style={{ backgroundColor: '#E5E7EB', width: '80%' }} />
+        <div className="animate-pulse h-3.5 rounded-full" style={{ backgroundColor: '#E5E7EB', width: '55%' }} />
+        {/* Rating */}
+        <div className="animate-pulse h-3 rounded-full" style={{ backgroundColor: '#E5E7EB', width: '40%' }} />
+        {/* Price */}
+        <div className="animate-pulse h-4 rounded-full" style={{ backgroundColor: '#E5E7EB', width: '45%' }} />
+        {/* Buttons */}
         <div className="flex gap-1.5 pt-1">
-          <div className="h-7 rounded-lg flex-1" style={{ backgroundColor: 'var(--border)' }} />
-          <div className="h-7 rounded-lg flex-1" style={{ backgroundColor: 'var(--border)' }} />
+          <div className="animate-pulse flex-1 h-7 rounded-lg" style={{ backgroundColor: '#E5E7EB' }} />
+          <div className="animate-pulse flex-1 h-7 rounded-lg" style={{ backgroundColor: '#E5E7EB' }} />
         </div>
       </div>
     </div>
@@ -57,7 +66,12 @@ export default function ProductsGrid() {
   const handleAddToCart = (e: React.MouseEvent, p: any) => {
     e.stopPropagation()
     e.preventDefault()
-    addItem({ id: p.id, name: p.name, price: p.price, image_urls: p.image_urls || [] })
+    addItem({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      image_urls: p.image_urls || (p.image_url ? [p.image_url] : [])
+    })
     setAddedIds(prev => new Set(prev).add(p.id))
     setTimeout(() => {
       setAddedIds(prev => { const n = new Set(prev); n.delete(p.id); return n })
@@ -67,21 +81,37 @@ export default function ProductsGrid() {
   const handleBuyNow = (e: React.MouseEvent, p: any) => {
     e.stopPropagation()
     e.preventDefault()
-    addItem({ id: p.id, name: p.name, price: p.price, image_urls: p.image_urls || [] })
+    addItem({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      image_urls: p.image_urls || (p.image_url ? [p.image_url] : [])
+    })
     router.push('/cart')
   }
 
-  if (loading) return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-      {[...Array(8)].map((_, i) => <ProductSkeleton key={i} />)}
-    </div>
-  )
+  // Show 8 skeleton cards while loading
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+        {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
+      </div>
+    )
+  }
 
-  if (!products.length) return (
-    <div className="p-8 text-center" style={{ color: 'var(--text-secondary)' }}>
-      No products found.
-    </div>
-  )
+  if (!products.length) {
+    return (
+      <div className="p-12 text-center">
+        <div className="text-5xl mb-3">🛍️</div>
+        <p className="font-semibold text-lg mb-1" style={{ color: 'var(--text-primary)' }}>
+          No products yet
+        </p>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          Check back soon — we're adding new items daily
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
@@ -92,10 +122,11 @@ export default function ProductsGrid() {
         return (
           <div
             key={p.id}
-            className="border rounded-xl overflow-hidden hover:shadow-lg transition cursor-pointer group"
+            className="border rounded-xl overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5 cursor-pointer group"
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
             onClick={() => router.push(`/products/${p.id}`)}
           >
+            {/* Product Image */}
             <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
               <Image
                 src={img}
@@ -106,8 +137,12 @@ export default function ProductsGrid() {
               />
             </div>
 
+            {/* Product Info */}
             <div className="p-3">
-              <p className="font-semibold text-sm mb-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>
+              <p
+                className="font-semibold text-sm mb-1 line-clamp-2"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 {p.name}
               </p>
 
@@ -138,7 +173,7 @@ export default function ProductsGrid() {
                   style={{ backgroundColor: inCart ? '#059669' : 'var(--secondary)' }}
                 >
                   <ShoppingCart size={12} />
-                  {inCart ? '✓ Added' : 'Add to Cart'}
+                  {inCart ? '✓ Added' : 'Cart'}
                 </button>
                 <button
                   onClick={(e) => handleBuyNow(e, p)}
